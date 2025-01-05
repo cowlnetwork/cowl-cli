@@ -1,0 +1,84 @@
+name: publish-cowl-cli
+
+on:
+  workflow_dispatch: # Allows manual triggering of the workflow
+  push: # Triggers on pushes to specific branches or tags
+    tags:
+      - 'v*'
+      - 'release-*'
+
+jobs:
+  publish-cowl-cli-tarball:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          components: rustfmt, clippy
+          target: wasm32-unknown-unknown
+
+      - name: Setup
+        run: make prepare
+
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y build-essential wabt
+
+      - name: Lint
+        run: make check-lint
+
+      - name: Audit
+        uses: actions-rs/cargo@v1
+        with:
+          command: audit
+          args: --deny warnings
+
+      - name: Casper node launcher js
+        run: |
+          git clone --branch dist_folder https://github.com/casper-network/casper-node-launcher-js.git
+          cd casper-node-launcher-js
+          npm install
+          npm run build
+          npx casper-node-launcher-js node --daemon
+
+      - name: Test
+        run: make test
+
+      - name: Build WASM and CLI
+        run: |
+          make build-release
+
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: cowl_cli.wasm
+          path: ./target/wasm32-unknown-unknown/release/cowl_cli.wasm
+
+      - name: Set execute permission for package_wasm.sh
+        run: chmod +x ./.github/ci/package_wasm.sh
+
+      - name: Create tarball for WASM
+        run: ./.github/ci/package_wasm.sh
+
+      - name: Upload tarball to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: /tmp/ci_package_wasm_${{ github.ref_name }}/cowl-cli-wasm.tar.gz
+
+      - name: Upload CLI binary
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./target/release/cowl_cli
+
+      - name: Upload shared library
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./target/release/libcowl_cli.so

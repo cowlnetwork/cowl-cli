@@ -1,0 +1,54 @@
+name: ci-cowl-cli
+
+on:
+  workflow_dispatch: # Allows manual triggering of the workflow
+  push: # Triggers on pushes to specific branches or tags
+    branches:
+      - dev
+    paths-ignore: # Ignore changes to Markdown files
+      - '**.md'
+  pull_request: # Triggers on pull requests to specific branches
+    branches:
+      - dev
+    paths-ignore: # Ignore changes to Markdown files in PRs
+      - '**.md'
+
+jobs:
+  ci-cowl-cli:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          components: rustfmt, clippy
+          target: wasm32-unknown-unknown
+
+      - name: Setup
+        run: make prepare
+
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y build-essential wabt
+
+      - name: Lint
+        run: make check-lint
+
+      - name: Audit
+        uses: actions-rs/cargo@v1
+        with:
+          command: audit
+          args: --deny warnings
+
+      - name: Casper node launcher js
+        run: |
+          git clone --branch dist_folder https://github.com/casper-network/casper-node-launcher-js.git
+          cd casper-node-launcher-js
+          npm install
+          npm run build
+          npx casper-node-launcher-js node --daemon
+
+      - name: Test
+        run: make test
