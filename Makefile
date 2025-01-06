@@ -1,9 +1,5 @@
 .PHONY: build build-release setup-test test clippy check-lint clean prepare
 
-LATEST_WASM_CEP18 := $(shell curl -s https://api.github.com/repos/cowlnetwork/cep18/releases/latest | jq -r '.assets[] | select(.name=="cowl-cep18-wasm.tar.gz") | .browser_download_url')
-LATEST_WASM_VESTING := $(shell curl -s https://api.github.com/repos/cowlnetwork/cowl-vesting/releases/latest | jq -r '.assets[] | select(.name=="cowl-vesting-wasm.tar.gz") | .browser_download_url')
-LATEST_WASM_SWAP := $(shell curl -s https://api.github.com/repos/cowlnetwork/cowl-swap/releases/latest | jq -r '.assets[] | select(.name=="cowl-swap-wasm.tar.gz") | .browser_download_url')
-
 prepare:
 	rustup target add wasm32-unknown-unknown
 	rustup component add clippy
@@ -21,6 +17,10 @@ build-release:
 
 setup-test: build
 	mkdir -p wasm
+
+	$(eval LATEST_WASM_CEP18=$(shell curl -s https://api.github.com/repos/cowlnetwork/cep18/releases/latest | jq -r '.assets[] | select(.name=="cowl-cep18-wasm.tar.gz") | .browser_download_url'))
+	$(eval LATEST_WASM_VESTING=$(shell curl -s https://api.github.com/repos/cowlnetwork/cowl-vesting/releases/latest | jq -r '.assets[] | select(.name=="cowl-vesting-wasm.tar.gz") | .browser_download_url'))
+	$(eval LATEST_WASM_SWAP=$(shell curl -s https://api.github.com/repos/cowlnetwork/cowl-swap/releases/latest | jq -r '.assets[] | select(.name=="cowl-swap-wasm.tar.gz") | .browser_download_url'))
 
 	@if [ -z "$(LATEST_WASM_CEP18)" ]; then \
 		echo "Error: cowl-cep18 WASM URL is empty."; \
@@ -52,7 +52,9 @@ setup-test: build
 	tar -xvzf cowl-swap-wasm.tar.gz -C wasm && \
 	rm cowl-swap-wasm.tar.gz
 
-test: setup-test
+test: setup-test test-dev
+
+test-dev:
 	cd tests && cargo test -- --test-threads=1 --nocapture
 
 clippy:
