@@ -593,12 +593,11 @@ mod tests_install_vesting {
 }
 
 mod tests_swap {
-    use std::sync::Arc;
-
     use assert_cmd::Command;
     use cowl_cli::utils::constants::COWL_CEP_18_TOKEN_SYMBOL;
     use once_cell::sync::Lazy;
-    use tokio::{sync::Mutex, test};
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
 
     const BINARY: &str = "cowl_cli";
 
