@@ -269,10 +269,7 @@ pub enum Commands {
     UpgradeEvents,
 
     /// Upgrade contratc and enable events
-    #[command(
-        name = "deposit-cowl",
-        about = "Upgrade and enable evensts (specific upgrade 01/2025)"
-    )]
+    #[command(name = "deposit-cowl", about = "Deposit COWL")]
     DepositCowl {
         /// Specify the source (public key signing).
         #[arg(
@@ -289,11 +286,21 @@ pub enum Commands {
         )]
         amount: String,
     },
+    #[command(name = "deposit-cspr", about = "Deposit CSPR")]
     DepositCspr {
         /// The amount to deposit.
         #[arg(
             long,
-            help = "The amount to deposit in the smallest unit (e.g., '100000000000' represents 100 COWL). Example: '100000000000'"
+            help = "The amount to deposit in the smallest unit (e.g., '100000000000' represents 100 CSPR). Example: '100000000000'"
+        )]
+        amount: String,
+    },
+    #[command(name = "withdraw-cowl", about = "Withdraw COWL")]
+    WithdrawCowl {
+        /// The amount to withdraw.
+        #[arg(
+            long,
+            help = "The amount to withdraw in the smallest unit (e.g., '100000000000' represents 100 COWL). Example: '100000000000'"
         )]
         amount: String,
     },
@@ -490,6 +497,9 @@ pub async fn run() {
         Commands::DepositCspr { amount } => {
             commands::deposit_cspr::print_deposit_cspr(amount).await
         }
+        Commands::WithdrawCowl { amount } => {
+            commands::withdraw_cowl::print_withdraw_cowl(amount).await
+        }
     }
 }
 
@@ -638,6 +648,14 @@ impl Display for Commands {
                 "Deposit {} CSPR ({} motes) \nfrom Installer",
                 format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
                 amount,
+            ),
+            Commands::WithdrawCowl { amount } => write!(
+                f,
+                "Withdraw {} {} ({} {}) \nfrom Installer",
+                format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
+                *COWL_CEP_18_TOKEN_SYMBOL,
+                amount,
+                *COWL_CEP_18_COOL_SYMBOL,
             ),
         }
     }

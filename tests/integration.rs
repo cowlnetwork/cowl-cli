@@ -671,4 +671,28 @@ mod tests_swap {
             .stdout(predicates::str::contains("Balance CSPR for Installer"))
             .stdout(predicates::str::contains(" motes"));
     }
+
+    #[tokio::test]
+    async fn test_withdraw_cowl_command() {
+        setup().await;
+        let mut cmd = Command::cargo_bin(BINARY).unwrap();
+        let amount = "100000000000";
+
+        let confirmation_response = "y\n";
+
+        cmd.arg("withdraw-cowl")
+            .arg("--amount")
+            .arg(amount)
+            .write_stdin(confirmation_response.to_string())
+            .assert()
+            .success()
+            .stdout(predicates::str::contains(format!(
+                "Command executed: Withdraw 100.00 {}",
+                COWL_CEP_18_TOKEN_SYMBOL.clone()
+            )))
+            .stdout(predicates::str::contains("Wait deploy_hash"))
+            .stdout(predicates::str::contains("Processed deploy hash"))
+            .stdout(predicates::str::contains("Balance for Installer"))
+            .stdout(predicates::str::contains(COWL_CEP_18_TOKEN_SYMBOL.clone()));
+    }
 }

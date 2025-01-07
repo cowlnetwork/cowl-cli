@@ -16,7 +16,7 @@ use constants::{
     CHAIN_NAME, COWL_CEP18_TOKEN_CONTRACT_HASH_NAME, COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME,
     COWL_SET_MODALITIES_CALL_PAYMENT_AMOUNT, COWL_SWAP_NAME,
     COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT, COWL_VESTING_CALL_PAYMENT_AMOUNT, COWL_VESTING_NAME,
-    EVENTS_ADDRESS, INSTALLER, RPC_ADDRESS, TTL,
+    COWL_WITHDRAW_CALL_PAYMENT_AMOUNT, EVENTS_ADDRESS, INSTALLER, RPC_ADDRESS, TTL,
 };
 use cowl_vesting::constants::{
     ARG_AMOUNT, ARG_EVENTS_MODE, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER, ARG_VESTING_TYPE,
@@ -26,7 +26,7 @@ use cowl_vesting::constants::{
 };
 
 use cowl_swap::constants::{
-    PREFIX_CONTRACT_NAME as PREFIX_CONTRACT_SWAP_NAME,
+    ENTRY_POINT_WITHDRAW_COWL, PREFIX_CONTRACT_NAME as PREFIX_CONTRACT_SWAP_NAME,
     PREFIX_CONTRACT_PACKAGE_NAME as PREFIX_CONTRACT_PACKAGE_SWAP_NAME,
 };
 use cowl_vesting::enums::{EventsMode, VestingType};
@@ -345,7 +345,7 @@ async fn execute_contract_entry_point(
 }
 
 pub async fn call_vesting_entry_point(
-    contract_vesting_hash: &str,
+    contract_vesting_package: &str,
     entry_point: &str,
     vesting_type: VestingType,
 ) {
@@ -360,7 +360,7 @@ pub async fn call_vesting_entry_point(
     .to_string();
 
     execute_contract_entry_point(
-        contract_vesting_hash,
+        contract_vesting_package,
         entry_point,
         &args,
         &COWL_VESTING_CALL_PAYMENT_AMOUNT,
@@ -371,7 +371,7 @@ pub async fn call_vesting_entry_point(
 }
 
 pub async fn call_set_modalities_entry_point(
-    contract_vesting_hash: &str,
+    contract_vesting_package: &str,
     events_mdoe: EventsMode,
 ) -> (String, String) {
     let key_pair = get_key_pair_from_vesting(INSTALLER).await.unwrap();
@@ -385,7 +385,7 @@ pub async fn call_set_modalities_entry_point(
     .to_string();
 
     execute_contract_entry_point(
-        contract_vesting_hash,
+        contract_vesting_package,
         ENTRY_POINT_SET_MODALITIES,
         &args,
         &COWL_SET_MODALITIES_CALL_PAYMENT_AMOUNT,
@@ -466,7 +466,6 @@ pub async fn call_token_set_allowance_entry_point(
         ENTRY_POINT_INCREASE_ALLOWANCE
     };
 
-    dbg!(contract_token_package_hash);
     execute_contract_entry_point(
         contract_token_package_hash,
         entry_point,
@@ -474,6 +473,28 @@ pub async fn call_token_set_allowance_entry_point(
         &COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT,
         public_key,
         secret_key,
+    )
+    .await;
+}
+
+pub async fn call_withdraw_cowl_entry_point(contract_vesting_package: &str, amount: String) {
+    let key_pair = get_key_pair_from_vesting(INSTALLER).await.unwrap();
+    let args = json!([
+        {
+            "name": ARG_AMOUNT,
+            "type": "U512",
+            "value": amount
+        }
+    ])
+    .to_string();
+
+    execute_contract_entry_point(
+        contract_vesting_package,
+        ENTRY_POINT_WITHDRAW_COWL,
+        &args,
+        &COWL_WITHDRAW_CALL_PAYMENT_AMOUNT,
+        &key_pair.public_key,
+        format_base64_to_pem(&key_pair.private_key_base64.unwrap()),
     )
     .await;
 }
