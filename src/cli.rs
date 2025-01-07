@@ -635,11 +635,9 @@ impl Display for Commands {
             ),
             Commands::DepositCspr { amount } => write!(
                 f,
-                "Deposit {} {} ({} {}) \nfrom Installer",
+                "Deposit {} CSPR ({} motes) \nfrom Installer",
                 format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
-                "CSPR",
                 amount,
-                "motes",
             ),
         }
     }
