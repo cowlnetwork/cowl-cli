@@ -23,12 +23,8 @@ use casper_rust_wasm_sdk::{
 };
 use cowl_swap::constants::{ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_COWL_SWAP_CONTRACT_PACKAGE};
 use cowl_vesting::constants::ARG_AMOUNT;
-use once_cell::sync::Lazy;
-use serde_json::{json, Value};
+use serde_json::json;
 use std::process;
-use tokio::sync::Mutex;
-
-static ARGS_DEPOSIT_COWL_JSON: Lazy<Mutex<Value>> = Lazy::new(|| Mutex::new(json!([])));
 
 pub async fn deposit_cowl(from: PublicKey, amount: String) -> Option<String> {
     let (cowl_cep18_token_contract_hash, cowl_cep18_token_package_hash) =
@@ -85,29 +81,23 @@ pub async fn deposit_cowl(from: PublicKey, amount: String) -> Option<String> {
     };
     session_params.set_session_bytes(module_bytes.into());
 
-    let mut args_deposit_cowl_json = ARGS_DEPOSIT_COWL_JSON.lock().await;
-
-    if let Some(array) = args_deposit_cowl_json.as_array_mut() {
-        let additional_args = vec![
-            json!({
-                "name": ARG_COWL_CEP18_CONTRACT_PACKAGE,
-                "type": "Key",
-                "value": cowl_cep18_token_package_hash
-            }),
-            json!({
-                "name": ARG_COWL_SWAP_CONTRACT_PACKAGE,
-                "type": "Key",
-                "value": cowl_swap_contract_package_hash
-            }),
-            json!({
-                "name": ARG_AMOUNT,
-                "type": "U256",
-                "value": amount
-            }),
-        ];
-
-        array.extend(additional_args);
-    }
+    let args_deposit_cowl_json = json!([
+        {
+            "name": ARG_COWL_CEP18_CONTRACT_PACKAGE,
+            "type": "Key",
+            "value": cowl_cep18_token_package_hash
+        },
+        {
+            "name": ARG_COWL_SWAP_CONTRACT_PACKAGE,
+            "type": "Key",
+            "value": cowl_swap_contract_package_hash
+        },
+        {
+            "name": ARG_AMOUNT,
+            "type": "U256",
+            "value": amount
+        }
+    ]);
 
     session_params.set_session_args_json(&args_deposit_cowl_json.to_string());
 

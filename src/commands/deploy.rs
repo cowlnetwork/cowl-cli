@@ -107,7 +107,7 @@ static ARGS_SWAP_JSON: Lazy<Mutex<Value>> = Lazy::new(|| {
         {
             "name": ARG_END_TIME,
             "type": "U64",
-            "value": 86400_u64
+            "value": 1_u64
         },
     ]))
 });
