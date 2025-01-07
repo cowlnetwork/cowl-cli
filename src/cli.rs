@@ -277,11 +277,19 @@ pub enum Commands {
         /// Specify the source (public key signing).
         #[arg(
             long,
-            help = "The source (public key signing) to transfer from.
+            help = "The source (public key signing) to deposit from.
                     Example: 016fd7fb5f002d82f3813c76ac83940d4d886035395ddd9be66c9a4a2993b63aaf"
         )]
         from: String,
 
+        /// The amount to deposit.
+        #[arg(
+            long,
+            help = "The amount to deposit in the smallest unit (e.g., '100000000000' represents 100 COWL). Example: '100000000000'"
+        )]
+        amount: String,
+    },
+    DepositCspr {
         /// The amount to deposit.
         #[arg(
             long,
@@ -479,6 +487,9 @@ pub async fn run() {
             )
             .await
         }
+        Commands::DepositCspr { amount } => {
+            commands::deposit_cspr::print_deposit_cspr(amount).await
+        }
     }
 }
 
@@ -621,6 +632,14 @@ impl Display for Commands {
                 amount,
                 *COWL_CEP_18_COOL_SYMBOL,
                 from.clone(),
+            ),
+            Commands::DepositCspr { amount } => write!(
+                f,
+                "Deposit {} {} ({} {}) \nfrom Installer",
+                format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
+                "CSPR",
+                amount,
+                "motes",
             ),
         }
     }

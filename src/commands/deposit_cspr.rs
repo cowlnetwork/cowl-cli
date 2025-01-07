@@ -1,13 +1,13 @@
 use crate::{
-    commands::balance::get_balance,
+    commands::balance::get_cspr_balance,
     utils::{
+        config::get_key_pair_from_vesting,
         constants::{
-            CHAIN_NAME, COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL,
-            COWL_DEPOSIT_COWL_CALL_PAYMENT_AMOUNT, DEFAULT_COWL_SWAP_DEPOSIT_COWL_SESSION,
-            EVENTS_ADDRESS, TTL, WASM_PATH,
+            CHAIN_NAME, COWL_DEPOSIT_CSPR_CALL_PAYMENT_AMOUNT, DEFAULT_BALANCE,
+            DEFAULT_COWL_SWAP_DEPOSIT_CSPR_SESSION, EVENTS_ADDRESS, INSTALLER, TTL, WASM_PATH,
         },
-        format_with_thousands_separator, get_contract_cep18_hash_keys, get_contract_swap_hash_keys,
-        keys::retrieve_private_key,
+        format_with_thousands_separator, get_contract_swap_hash_keys,
+        keys::{format_base64_to_pem, get_key_pair_from_key},
         prompt_yes_no, read_wasm_file, sdk,
     },
 };
@@ -18,40 +18,32 @@ use casper_rust_wasm_sdk::{
         deploy_hash::DeployHash,
         deploy_params::{deploy_str_params::DeployStrParams, session_str_params::SessionStrParams},
         key::Key,
-        public_key::PublicKey,
     },
 };
-use cowl_swap::constants::{ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_COWL_SWAP_CONTRACT_PACKAGE};
+use cowl_swap::constants::ARG_COWL_SWAP_CONTRACT_PACKAGE;
 use cowl_vesting::constants::ARG_AMOUNT;
 use serde_json::json;
 use std::process;
 
-pub async fn deposit_cowl(from: PublicKey, amount: String) -> Option<String> {
-    let (cowl_cep18_token_contract_hash, cowl_cep18_token_package_hash) =
-        match get_contract_cep18_hash_keys().await {
-            Some((hash, package_hash)) => (hash, package_hash),
-            None => (String::from(""), String::from("")),
-        };
-
-    if cowl_cep18_token_contract_hash.is_empty() {
-        log::error!("Token contract does not exist in installer named keys");
-        process::exit(1)
-    }
-
+pub async fn deposit_cspr(amount: String) -> Option<(String, String)> {
     let (_, cowl_swap_contract_package_hash) = match get_contract_swap_hash_keys().await {
         Some((hash, package_hash)) => (hash, package_hash),
         None => (String::from(""), String::from("")),
     };
 
-    // Retrieve the private key
-    let secret_key = retrieve_private_key(&from).await;
+    if cowl_swap_contract_package_hash.is_empty() {
+        log::error!("Swap contract package does not exist in installer named keys");
+        process::exit(1)
+    }
+
+    let key_pair = get_key_pair_from_vesting(INSTALLER).await.unwrap();
 
     let answer = prompt_yes_no(&format!(
         "Please confirm deposit of {} {} ({} {})?",
         format_with_thousands_separator(&motes_to_cspr(&amount).unwrap()),
-        *COWL_CEP_18_TOKEN_SYMBOL,
+        "CSPR",
         amount,
-        *COWL_CEP_18_COOL_SYMBOL,
+        "motes",
     ));
 
     if !answer {
@@ -61,8 +53,10 @@ pub async fn deposit_cowl(from: PublicKey, amount: String) -> Option<String> {
 
     let deploy_params = DeployStrParams::new(
         &CHAIN_NAME,
-        &from.to_string(),
-        Some(secret_key.expect("Failed to retrieve sender private key.")),
+        &key_pair.public_key.to_string(),
+        Some(format_base64_to_pem(
+            &key_pair.private_key_base64.unwrap().clone(),
+        )),
         None,
         Some(TTL.to_string()),
     );
@@ -70,7 +64,7 @@ pub async fn deposit_cowl(from: PublicKey, amount: String) -> Option<String> {
     let session_params = SessionStrParams::default();
     let path = &format!(
         "{}{}.wasm",
-        WASM_PATH, DEFAULT_COWL_SWAP_DEPOSIT_COWL_SESSION
+        WASM_PATH, DEFAULT_COWL_SWAP_DEPOSIT_CSPR_SESSION
     );
     let module_bytes = match read_wasm_file(path) {
         Ok(module_bytes) => module_bytes,
@@ -81,12 +75,7 @@ pub async fn deposit_cowl(from: PublicKey, amount: String) -> Option<String> {
     };
     session_params.set_session_bytes(module_bytes.into());
 
-    let args_deposit_cowl_json = json!([
-        {
-            "name": ARG_COWL_CEP18_CONTRACT_PACKAGE,
-            "type": "Key",
-            "value": cowl_cep18_token_package_hash
-        },
+    let args_deposit_cspr_json = json!([
         {
             "name": ARG_COWL_SWAP_CONTRACT_PACKAGE,
             "type": "Key",
@@ -94,18 +83,18 @@ pub async fn deposit_cowl(from: PublicKey, amount: String) -> Option<String> {
         },
         {
             "name": ARG_AMOUNT,
-            "type": "U256",
+            "type": "U512",
             "value": amount
         }
     ]);
 
-    session_params.set_session_args_json(&args_deposit_cowl_json.to_string());
+    session_params.set_session_args_json(&args_deposit_cspr_json.to_string());
 
     let session_call = sdk()
         .install(
             deploy_params,
             session_params,
-            &COWL_DEPOSIT_COWL_CALL_PAYMENT_AMOUNT,
+            &COWL_DEPOSIT_CSPR_CALL_PAYMENT_AMOUNT,
             None,
         )
         .await;
@@ -137,8 +126,8 @@ pub async fn deposit_cowl(from: PublicKey, amount: String) -> Option<String> {
     }
 
     log::info!(
-        "Wait deploy_hash for desposit {} {}",
-        *COWL_CEP_18_TOKEN_SYMBOL,
+        "Wait deploy_hash for deposit {} {}",
+        "CSPR",
         deploy_hash_as_string,
     );
 
@@ -172,20 +161,25 @@ pub async fn deposit_cowl(from: PublicKey, amount: String) -> Option<String> {
     log::info!("Processed deploy hash {result}");
     log::info!("Cost {cost} CSPR ({motes} motes)");
 
-    let key = Some(Key::from_account(from.to_account_hash()));
+    let key = Key::from_account(key_pair.public_key.to_account_hash());
+    let (vesting_type, key_pair) = get_key_pair_from_key(&key).await;
 
-    let to_balance = get_balance(None, key).await;
-    Some(to_balance)
+    let default_balance = (DEFAULT_BALANCE.to_string(), DEFAULT_BALANCE.to_string());
+
+    let identifier = key.to_formatted_string();
+
+    let balance = match (vesting_type, key_pair) {
+        (Some(vesting_type), Some(key_pair)) => get_cspr_balance(&key_pair, &vesting_type).await,
+        (None, Some(key_pair)) => get_cspr_balance(&key_pair, &identifier).await,
+        _ => default_balance,
+    };
+    Some(balance)
 }
 
-pub async fn print_deposit_cowl(from: PublicKey, amount: String) {
-    if let Some(balance) = deposit_cowl(from.clone(), amount).await {
-        log::info!("Balance for {}", from.to_string());
-        log::info!(
-            "{} {}",
-            format_with_thousands_separator(&motes_to_cspr(&balance).unwrap()),
-            *COWL_CEP_18_TOKEN_SYMBOL
-        );
-        log::info!("{} {}", balance, *COWL_CEP_18_COOL_SYMBOL);
+pub async fn print_deposit_cspr(amount: String) {
+    if let Some((balance, balance_motes)) = deposit_cspr(amount).await {
+        log::info!("Balance CSPR for Installer");
+        log::info!("{} {}", format_with_thousands_separator(&balance), "CSPR");
+        log::info!("{} {}", balance_motes, "motes");
     }
 }

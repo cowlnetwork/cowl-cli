@@ -1,6 +1,6 @@
 use crate::utils::{
     config::get_key_pair_from_vesting,
-    constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL},
+    constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL, DEFAULT_BALANCE},
     format_with_thousands_separator, get_contract_cep18_hash_keys, get_dictionary_item_params,
     keys::{get_key_pair_from_key, KeyPair},
     sdk, stored_value_to_parsed_string,
@@ -12,8 +12,6 @@ use casper_rust_wasm_sdk::{
 use cowl_vesting::{constants::DICT_BALANCES, enums::VestingType};
 use indexmap::IndexMap;
 use serde_json::to_string;
-
-const DEFAULT_BALANCE: &str = "0";
 
 pub async fn get_balance(
     maybe_vesting_type: Option<VestingType>,
