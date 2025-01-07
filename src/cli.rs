@@ -54,6 +54,10 @@ pub enum Commands {
         /// Deploy only the vesting contract.
         #[arg(long, help = "Deploy only the vesting contract")]
         vesting: bool,
+
+        /// Deploy only the swap contract.
+        #[arg(long, help = "Deploy only the swap contract")]
+        swap: bool,
     },
 
     /// Retrieve vesting information.
@@ -257,12 +261,34 @@ pub enum Commands {
         amount: String,
     },
 
-    /// Fund and retrieve the balance of a vesting or public key.
+    /// Upgrade contratc and enable events
     #[command(
         name = "upgrade-events",
         about = "Upgrade and enable evensts (specific upgrade 01/2025)"
     )]
     UpgradeEvents,
+
+    /// Upgrade contratc and enable events
+    #[command(
+        name = "deposit-cowl",
+        about = "Upgrade and enable evensts (specific upgrade 01/2025)"
+    )]
+    DepositCowl {
+        /// Specify the source (public key signing).
+        #[arg(
+            long,
+            help = "The source (public key signing) to transfer from.
+                    Example: 016fd7fb5f002d82f3813c76ac83940d4d886035395ddd9be66c9a4a2993b63aaf"
+        )]
+        from: String,
+
+        /// The amount to deposit.
+        #[arg(
+            long,
+            help = "The amount to deposit in the smallest unit (e.g., '100000000000' represents 100 COWL). Example: '100000000000'"
+        )]
+        amount: String,
+    },
 }
 
 pub async fn run() {
@@ -277,11 +303,17 @@ pub async fn run() {
             }
         }
         Commands::ListFundedAdresses => commands::addresses::print_funded_addresses().await,
-        Commands::DeployContracts { token, vesting } => {
+        Commands::DeployContracts {
+            token,
+            vesting,
+            swap,
+        } => {
             let result = if token {
                 commands::deploy::deploy_cep18_token().await
             } else if vesting {
                 commands::deploy::deploy_vesting_contract().await
+            } else if swap {
+                commands::deploy::deploy_swap_contract().await
             } else {
                 commands::deploy::deploy_all_contracts().await
             };
@@ -440,6 +472,13 @@ pub async fn run() {
             .await
         }
         Commands::UpgradeEvents => commands::upgrade_events::print_upgrade_events().await,
+        Commands::DepositCowl { from, amount } => {
+            commands::deposit_cowl::print_deposit_cowl(
+                PublicKey::new(&from).expect("Failed to convert public key to key"),
+                amount,
+            )
+            .await
+        }
     }
 }
 
@@ -449,15 +488,22 @@ impl Display for Commands {
             Commands::Types => write!(f, "List vesting Types"),
             Commands::ListFundedAdresses => write!(f, "List Funded Adresses"),
 
-            Commands::DeployContracts { token, vesting } => {
-                if *token || *vesting {
+            Commands::DeployContracts {
+                token,
+                vesting,
+                swap,
+            } => {
+                if *token || *vesting || *swap {
                     write!(
                         f,
-                        "Deploy Contracts {{ token: {}, vesting: {} }}",
-                        token, vesting
+                        "Deploy Contracts {{ token: {}, vesting: {}, swap: {} }}",
+                        token, vesting, swap
                     )
                 } else {
-                    write!(f, "Deploy All Contracts {{ token: true, vesting: true }}")
+                    write!(
+                        f,
+                        "Deploy All Contracts {{ token: true, vesting: true, swap: true }}"
+                    )
                 }
             }
 
@@ -567,6 +613,15 @@ impl Display for Commands {
                 write!(f, "{}", message)
             }
             Commands::UpgradeEvents => write!(f, "Upgrade and enable Events"),
+            Commands::DepositCowl { from, amount } => write!(
+                f,
+                "Deposit {} {} ({} {}) \nfrom {}",
+                format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
+                *COWL_CEP_18_TOKEN_SYMBOL,
+                amount,
+                *COWL_CEP_18_COOL_SYMBOL,
+                from.clone(),
+            ),
         }
     }
 }

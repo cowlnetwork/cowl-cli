@@ -2,11 +2,13 @@ use crate::utils::{
     config::{get_key_pair_from_vesting, CONFIG_LOCK},
     constants::{
         CHAIN_NAME, COWL_CEP_18_INSTALL_PAYMENT_AMOUNT, COWL_CEP_18_TOKEN_DECIMALS,
-        COWL_CEP_18_TOKEN_NAME, COWL_CEP_18_TOKEN_SYMBOL, COWL_VESTING_NAME,
-        DEFAULT_COWL_CEP_18_TOKEN_DECIMALS, DEFAULT_COWL_CEP_18_TOKEN_NAME,
+        COWL_CEP_18_TOKEN_NAME, COWL_CEP_18_TOKEN_SYMBOL, COWL_SWAP_INSTALL_PAYMENT_AMOUNT,
+        COWL_SWAP_NAME, COWL_VESTING_INSTALL_PAYMENT_AMOUNT, COWL_VESTING_NAME,
+        DEFAULT_COWL_CEP_18_TOKEN_DECIMALS, DEFAULT_COWL_CEP_18_TOKEN_NAME, DEFAULT_COWL_SWAP_NAME,
         DEFAULT_COWL_VESTING_NAME, EVENTS_ADDRESS, INSTALLER, TTL, WASM_PATH,
     },
-    format_with_thousands_separator, get_contract_cep18_hash_keys, get_contract_vesting_hash_keys,
+    format_with_thousands_separator, get_contract_cep18_hash_keys, get_contract_swap_hash_keys,
+    get_contract_vesting_hash_keys,
     keys::format_base64_to_pem,
     prompt_yes_no, read_wasm_file, sdk,
 };
@@ -18,6 +20,7 @@ use casper_rust_wasm_sdk::{
         deploy_params::{deploy_str_params::DeployStrParams, session_str_params::SessionStrParams},
     },
 };
+use cowl_swap::constants::{ARG_END_TIME, ARG_START_TIME};
 use cowl_vesting::{
     constants::{ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_UPGRADE_FLAG},
     enums::EventsMode,
@@ -84,9 +87,35 @@ static ARGS_VESTING_JSON: Lazy<Mutex<Value>> = Lazy::new(|| {
     ]))
 });
 
+static ARGS_SWAP_JSON: Lazy<Mutex<Value>> = Lazy::new(|| {
+    Mutex::new(json!([
+        {
+            "name": ARG_NAME,
+            "type": "String",
+            "value": *COWL_SWAP_NAME
+        },
+        {
+            "name": ARG_EVENTS_MODE,
+            "type": "U8",
+            "value": EventsMode::CES as u8
+        },
+        {
+            "name": ARG_START_TIME,
+            "type": "U64",
+            "value":0_u64
+        },
+        {
+            "name": ARG_END_TIME,
+            "type": "U64",
+            "value": 86400_u64
+        },
+    ]))
+});
+
 pub async fn deploy_all_contracts() -> Result<(), Error> {
     deploy_cep18_token().await?;
     deploy_vesting_contract().await?;
+    deploy_swap_contract().await?;
     Ok(())
 }
 
@@ -239,7 +268,7 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
         };
 
     if cowl_cep18_token_contract_hash.is_empty() {
-        log::error!("Token contract does not exist in installer named keys at {cowl_cep18_token_contract_hash}");
+        log::error!("Token contract does not exist in installer named keys");
         process::exit(1)
     }
 
@@ -330,7 +359,7 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
         .install(
             deploy_params,
             session_params,
-            &COWL_CEP_18_INSTALL_PAYMENT_AMOUNT,
+            &COWL_VESTING_INSTALL_PAYMENT_AMOUNT,
             None,
         )
         .await;
@@ -406,5 +435,169 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
         };
     log::info!("contract_vesting_hash {contract_vesting_hash}");
     log::info!("contract_vesting_package_hash {contract_vesting_package_hash}");
+    Ok(())
+}
+
+pub async fn deploy_swap_contract() -> Result<(), Error> {
+    let key_pair = get_key_pair_from_vesting(INSTALLER).await.unwrap();
+
+    let (cowl_cep18_token_contract_hash, cowl_cep18_token_package_hash) =
+        match get_contract_cep18_hash_keys().await {
+            Some((hash, package_hash)) => (hash, package_hash),
+            None => (String::from(""), String::from("")),
+        };
+
+    if cowl_cep18_token_contract_hash.is_empty() {
+        log::error!("Token contract does not exist in installer named keys");
+        process::exit(1)
+    }
+
+    let (contract_swap_hash, _) = match get_contract_swap_hash_keys().await {
+        Some((hash, package_hash)) => (hash, package_hash),
+        None => (String::from(""), String::from("")),
+    };
+
+    if !contract_swap_hash.is_empty() {
+        let answer = prompt_yes_no(&format!(
+            "Swap contract already exists at {}, do you want to upgrade?",
+            contract_swap_hash
+        ));
+
+        if answer {
+            log::info!(
+                "You chose to upgrade swap contract at {}",
+                contract_swap_hash
+            );
+            let mut args_swap_json = ARGS_SWAP_JSON.lock().await;
+            if let Some(array) = args_swap_json.as_array_mut() {
+                array.push(json!({
+                    "name": ARG_UPGRADE_FLAG.to_string(),
+                    "type": "Bool",
+                    "value": true
+                }));
+            }
+        } else {
+            log::info!(
+                "You chose not to upgrade swap contract at {}",
+                contract_swap_hash
+            );
+            return Ok(());
+        }
+    }
+
+    let deploy_params = DeployStrParams::new(
+        &CHAIN_NAME,
+        &key_pair.public_key.to_string(),
+        Some(format_base64_to_pem(
+            &key_pair.private_key_base64.unwrap().clone(),
+        )),
+        None,
+        Some(TTL.to_string()),
+    );
+
+    let session_params = SessionStrParams::default();
+    let path = &format!("{}{}.wasm", WASM_PATH, DEFAULT_COWL_SWAP_NAME);
+    let module_bytes = match read_wasm_file(path) {
+        Ok(module_bytes) => module_bytes,
+        Err(err) => {
+            log::error!("Error reading file {}: {:?}", path, err);
+            return Err(err);
+        }
+    };
+    session_params.set_session_bytes(module_bytes.into());
+
+    let mut args_swap_json = ARGS_SWAP_JSON.lock().await;
+    if contract_swap_hash.is_empty() {
+        if let Some(array) = args_swap_json.as_array_mut() {
+            array.push(json!({
+                "name": ARG_COWL_CEP18_CONTRACT_PACKAGE,
+                "type": "Key",
+                "value": cowl_cep18_token_package_hash
+            }));
+        }
+    }
+
+    session_params.set_session_args_json(&args_swap_json.to_string());
+
+    let install = sdk()
+        .install(
+            deploy_params,
+            session_params,
+            &COWL_SWAP_INSTALL_PAYMENT_AMOUNT,
+            None,
+        )
+        .await;
+
+    let api_version = install.as_ref().unwrap().result.api_version.to_string();
+
+    if api_version.is_empty() {
+        log::error!("Failed to retrieve contract API version");
+        process::exit(1)
+    }
+
+    let deploy_hash = DeployHash::from(
+        install
+            .as_ref()
+            .expect("should have a deploy hash")
+            .result
+            .deploy_hash,
+    );
+    let deploy_hash_as_string = deploy_hash.to_string();
+
+    if deploy_hash_as_string.is_empty() {
+        log::error!("Failed to retrieve deploy hash");
+        process::exit(1)
+    }
+
+    if !contract_swap_hash.is_empty() {
+        log::info!(
+            "Wait deploy_hash for swap upgrade {}",
+            deploy_hash_as_string
+        );
+    } else {
+        log::info!(
+            "Wait deploy_hash for swap install {}",
+            deploy_hash_as_string
+        );
+    }
+    let event_parse_result: EventParseResult = sdk()
+        .wait_deploy(&EVENTS_ADDRESS, &deploy_hash_as_string, None)
+        .await
+        .unwrap();
+    let motes = event_parse_result
+        .clone()
+        .body
+        .unwrap()
+        .deploy_processed
+        .unwrap()
+        .execution_result
+        .success
+        .unwrap_or_else(|| {
+            log::error!("Could not retrieved cost for deploy hash {deploy_hash_as_string}");
+            log::error!("{:?}", &event_parse_result);
+            process::exit(1)
+        })
+        .cost;
+
+    let cost = format_with_thousands_separator(&motes_to_cspr(&motes).unwrap());
+
+    let finalized_approvals = true;
+    let get_deploy = sdk()
+        .get_deploy(deploy_hash, Some(finalized_approvals), None, None)
+        .await;
+    let get_deploy = get_deploy.unwrap();
+    let result = DeployHash::from(get_deploy.result.deploy.hash).to_string();
+    log::info!("Processed deploy hash {result}");
+    log::info!("Cost {cost} CSPR ({motes} motes)");
+    let (contract_swap_hash, contract_swap_package_hash) = match get_contract_swap_hash_keys().await
+    {
+        Some((hash, package_hash)) => (hash, package_hash),
+        None => {
+            log::error!("Failed to retrieve contract swap keys");
+            process::exit(1)
+        }
+    };
+    log::info!("contract_swap_hash {contract_swap_hash}");
+    log::info!("contract_swap_package_hash {contract_swap_package_hash}");
     Ok(())
 }

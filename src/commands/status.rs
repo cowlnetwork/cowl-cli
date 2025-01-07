@@ -14,17 +14,18 @@ pub async fn vesting_status(
     call_entry_point: bool,
 ) -> Option<VestingStatus> {
     // Retrieve contract vesting hash and package hash
-    let (contract_vesting_hash, _) = match get_contract_vesting_hash_keys().await {
-        Some((hash, package_hash)) => (hash, package_hash),
-        None => {
-            log::error!("Failed to retrieve contract vesting hash and package hash.");
-            return None;
-        }
-    };
+    let (contract_vesting_hash, contract_vesting_package) =
+        match get_contract_vesting_hash_keys().await {
+            Some((hash, package_hash)) => (hash, package_hash),
+            None => {
+                log::error!("Failed to retrieve contract vesting hash and package hash.");
+                return None;
+            }
+        };
 
     if call_entry_point {
         call_vesting_entry_point(
-            &contract_vesting_hash,
+            &contract_vesting_package,
             ENTRY_POINT_VESTING_STATUS,
             vesting_type,
         )

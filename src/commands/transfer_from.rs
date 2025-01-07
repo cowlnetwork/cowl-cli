@@ -18,7 +18,7 @@ pub async fn transfer_from(
     amount: String,
 ) -> Option<String> {
     // Retrieve contract token hash and package hash
-    let (cowl_cep18_token_contract_hash, _) = match get_contract_cep18_hash_keys().await {
+    let (_, cowl_cep18_token_contract_package_hash) = match get_contract_cep18_hash_keys().await {
         Some((hash, package_hash)) => (hash, package_hash),
         None => {
             log::error!("Failed to retrieve contract token hash and package hash.");
@@ -45,7 +45,7 @@ pub async fn transfer_from(
 
     // Call the token transfer_from entry point
     call_token_transfer_entry_point(
-        &cowl_cep18_token_contract_hash,
+        &cowl_cep18_token_contract_package_hash,
         &operator,
         secret_key.expect("Failed to retrieve sender private key."),
         Some(from),

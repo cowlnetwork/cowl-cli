@@ -14,15 +14,20 @@ use casper_rust_wasm_sdk::{types::verbosity::Verbosity, SDK};
 use config::get_key_pair_from_vesting;
 use constants::{
     CHAIN_NAME, COWL_CEP18_TOKEN_CONTRACT_HASH_NAME, COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME,
-    COWL_SET_MODALITIES_CALL_PAYMENT_AMOUNT, COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT,
-    COWL_VESTING_CALL_PAYMENT_AMOUNT, COWL_VESTING_NAME, EVENTS_ADDRESS, INSTALLER, RPC_ADDRESS,
-    TTL,
+    COWL_SET_MODALITIES_CALL_PAYMENT_AMOUNT, COWL_SWAP_NAME,
+    COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT, COWL_VESTING_CALL_PAYMENT_AMOUNT, COWL_VESTING_NAME,
+    EVENTS_ADDRESS, INSTALLER, RPC_ADDRESS, TTL,
 };
 use cowl_vesting::constants::{
     ARG_AMOUNT, ARG_EVENTS_MODE, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER, ARG_VESTING_TYPE,
     ENTRY_POINT_DECREASE_ALLOWANCE, ENTRY_POINT_INCREASE_ALLOWANCE, ENTRY_POINT_SET_MODALITIES,
     ENTRY_POINT_TRANSFER, ENTRY_POINT_TRANSFER_FROM, PREFIX_CONTRACT_NAME,
     PREFIX_CONTRACT_PACKAGE_NAME,
+};
+
+use cowl_swap::constants::{
+    PREFIX_CONTRACT_NAME as PREFIX_CONTRACT_SWAP_NAME,
+    PREFIX_CONTRACT_PACKAGE_NAME as PREFIX_CONTRACT_PACKAGE_SWAP_NAME,
 };
 use cowl_vesting::enums::{EventsMode, VestingType};
 use cowl_vesting::vesting::VestingData;
@@ -171,6 +176,20 @@ pub async fn get_contract_vesting_hash_keys() -> Option<(String, String)> {
     .await
 }
 
+// Specific function for getting Swap contract hash keys
+pub async fn get_contract_swap_hash_keys() -> Option<(String, String)> {
+    let public_key = get_key_pair_from_vesting(INSTALLER)
+        .await
+        .unwrap()
+        .public_key;
+    get_contract_hash_keys(
+        &public_key,
+        &format!("{PREFIX_CONTRACT_SWAP_NAME}_{}", *COWL_SWAP_NAME),
+        &format!("{PREFIX_CONTRACT_PACKAGE_SWAP_NAME}_{}", *COWL_SWAP_NAME),
+    )
+    .await
+}
+
 pub fn get_dictionary_item_params(
     key: &str,
     dictionary_name: &str,
@@ -242,7 +261,7 @@ pub fn stored_value_to_parsed_string(json_string: &str) -> Option<String> {
 }
 
 async fn execute_contract_entry_point(
-    contract_hash: &str,
+    contract_token_package_hash: &str,
     entry_point: &str,
     args_json: &str,
     payment_amount: &str,
@@ -258,7 +277,7 @@ async fn execute_contract_entry_point(
     );
 
     let session_params = SessionStrParams::default();
-    session_params.set_session_hash(contract_hash);
+    session_params.set_session_package_hash(contract_token_package_hash);
     session_params.set_session_entry_point(entry_point);
     session_params.set_session_args_json(args_json);
 
@@ -377,7 +396,7 @@ pub async fn call_set_modalities_entry_point(
 }
 
 pub async fn call_token_transfer_entry_point(
-    contract_token_hash: &str,
+    contract_token_package_hash: &str,
     public_key: &PublicKey,
     secret_key: String,
     from: Option<Key>,
@@ -409,7 +428,7 @@ pub async fn call_token_transfer_entry_point(
     };
 
     execute_contract_entry_point(
-        contract_token_hash,
+        contract_token_package_hash,
         entry_point,
         &args.to_string(),
         &COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT,
@@ -420,7 +439,7 @@ pub async fn call_token_transfer_entry_point(
 }
 
 pub async fn call_token_set_allowance_entry_point(
-    contract_token_hash: &str,
+    contract_token_package_hash: &str,
     public_key: &PublicKey,
     secret_key: String,
     spender: &Key,
@@ -447,8 +466,9 @@ pub async fn call_token_set_allowance_entry_point(
         ENTRY_POINT_INCREASE_ALLOWANCE
     };
 
+    dbg!(contract_token_package_hash);
     execute_contract_entry_point(
-        contract_token_hash,
+        contract_token_package_hash,
         entry_point,
         &args,
         &COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT,

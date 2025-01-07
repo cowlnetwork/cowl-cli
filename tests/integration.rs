@@ -1,4 +1,4 @@
-mod tests_async {
+mod tests_install_vesting {
     use std::sync::Arc;
 
     use assert_cmd::Command;
@@ -16,7 +16,7 @@ mod tests_async {
         if setup_done.is_none() {
             let mut cmd = Command::cargo_bin("cowl_cli").unwrap();
             cmd.arg("deploy")
-                .write_stdin("y\ny\n")
+                .write_stdin("y\ny\ny\n")
                 .assert()
                 .success()
                 .stdout(predicates::str::contains(
@@ -47,7 +47,7 @@ mod tests_async {
         setup().await;
         let mut cmd = Command::cargo_bin(BINARY).unwrap();
         cmd.arg("deploy")
-            .write_stdin("y\ny\n")
+            .write_stdin("y\ny\ny\n")
             .assert()
             .success() // Ensure the command runs successfully
             .stdout(predicates::str::contains(
@@ -65,7 +65,7 @@ mod tests_async {
             .assert()
             .success()
             .stdout(predicates::str::contains(
-                "Command executed: Deploy Contracts { token: true, vesting: false }",
+                "Command executed: Deploy Contracts { token: true, vesting: false, swap: false }",
             ));
     }
 
@@ -79,7 +79,21 @@ mod tests_async {
             .assert()
             .success()
             .stdout(predicates::str::contains(
-                "Command executed: Deploy Contracts { token: false, vesting: true }",
+                "Command executed: Deploy Contracts { token: false, vesting: true, swap: false }",
+            ));
+    }
+
+    #[test]
+    async fn test_deploy_swap_contract() {
+        setup().await;
+        let mut cmd = Command::cargo_bin(BINARY).unwrap();
+        cmd.arg("deploy")
+            .arg("--swap")
+            .write_stdin("y\n")
+            .assert()
+            .success()
+            .stdout(predicates::str::contains(
+                "Command executed: Deploy Contracts { token: false, vesting: false, swap: true }",
             ));
     }
 
@@ -574,6 +588,65 @@ mod tests_async {
             .stdout(predicates::str::contains("Processed deploy hash"))
             .stdout(predicates::str::contains("CSPR"))
             .stdout(predicates::str::contains("Transfer"))
+            .stdout(predicates::str::contains(COWL_CEP_18_TOKEN_SYMBOL.clone()));
+    }
+}
+
+mod tests_swap {
+    use std::sync::Arc;
+
+    use assert_cmd::Command;
+    use cowl_cli::utils::constants::COWL_CEP_18_TOKEN_SYMBOL;
+    use once_cell::sync::Lazy;
+    use tokio::{sync::Mutex, test};
+
+    const BINARY: &str = "cowl_cli";
+
+    static SETUP_DONE: Lazy<Arc<Mutex<Option<bool>>>> = Lazy::new(|| Arc::new(Mutex::new(None)));
+
+    // Run the setup (deploy the contract) only if not done yet
+    async fn setup() {
+        let mut setup_done = SETUP_DONE.lock().await;
+        if setup_done.is_none() {
+            let mut cmd = Command::cargo_bin("cowl_cli").unwrap();
+            cmd.arg("deploy")
+                .write_stdin("y\ny\ny\n")
+                .assert()
+                .success()
+                .stdout(predicates::str::contains(
+                    "Command executed: Deploy All Contracts",
+                ));
+            // Mark the setup as done
+            *setup_done = Some(true);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_desposi_cowl_command() {
+        setup().await;
+        let mut cmd = Command::cargo_bin(BINARY).unwrap();
+        let from = "01fbe77037c317c12af3a6af08d02d9fc6b3a1636237ae48f77b198a9483d94801"; // Liquidity
+        let amount = "100000000000";
+
+        let base64_key = "MC4CAQAwBQYDK2VwBCIEIOeKQNbCmsyZme2t5U7Lulnn2TfdZkiFANeg89Sy7Pzn";
+        let confirmation_response = "y\n";
+
+        cmd.arg("deposit-cowl")
+            .arg("--from")
+            .arg(from)
+            .arg("--amount")
+            .arg(amount)
+            .write_stdin(format!("{base64_key}\n{confirmation_response}"))
+            .assert()
+            .success()
+            .stdout(predicates::str::contains(format!(
+                "Command executed: Deposit 100.00 {}",
+                COWL_CEP_18_TOKEN_SYMBOL.clone()
+            )))
+            .stdout(predicates::str::contains(from))
+            .stdout(predicates::str::contains("Wait deploy_hash"))
+            .stdout(predicates::str::contains("Processed deploy hash"))
+            .stdout(predicates::str::contains("CSPR"))
             .stdout(predicates::str::contains(COWL_CEP_18_TOKEN_SYMBOL.clone()));
     }
 }
