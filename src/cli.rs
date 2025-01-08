@@ -314,10 +314,10 @@ pub enum Commands {
         amount: String,
     },
     #[command(
-        name = "swap-balance-cowl",
+        name = "swap-balance",
         about = "Retrieve the balance of the swap contract"
     )]
-    SwapBalanceCowl,
+    SwapBalance,
 }
 
 pub async fn run() {
@@ -517,7 +517,7 @@ pub async fn run() {
         Commands::WithdrawCspr { amount } => {
             commands::withdraw_cspr::print_withdraw_cspr(amount).await
         }
-        Commands::SwapBalanceCowl => commands::swap_balance_cowl::print_swap_balance_cowl().await,
+        Commands::SwapBalance => commands::swap_balance::print_swap_balance().await,
     }
 }
 
@@ -681,7 +681,7 @@ impl Display for Commands {
                 format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
                 amount,
             ),
-            Commands::SwapBalanceCowl => write!(f, "Get Swap contract balance"),
+            Commands::SwapBalance => write!(f, "Get Swap contract balance"),
         }
     }
 }

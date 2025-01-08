@@ -724,11 +724,11 @@ mod tests_swap {
     }
 
     #[tokio::test]
-    async fn test_swap_balance_cowl_command() {
+    async fn test_swap_balance_command() {
         setup().await;
         let mut cmd = Command::cargo_bin(BINARY).unwrap();
 
-        cmd.arg("swap-balance-cowl")
+        cmd.arg("swap-balance")
             .assert()
             .success()
             .stdout(predicates::str::contains(

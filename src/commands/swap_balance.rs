@@ -2,7 +2,7 @@ use crate::{commands::balance::print_balance, utils::get_contract_swap_hash_keys
 use casper_rust_wasm_sdk::types::key::Key;
 use std::process;
 
-pub async fn swap_balance_cowl() {
+pub async fn swap_balance() {
     let (_, cowl_swap_contract_package_hash) = match get_contract_swap_hash_keys().await {
         Some((hash, package_hash)) => (hash, package_hash),
         None => (String::from(""), String::from("")),
@@ -19,6 +19,6 @@ pub async fn swap_balance_cowl() {
     print_balance(None, key).await;
 }
 
-pub async fn print_swap_balance_cowl() {
-    swap_balance_cowl().await
+pub async fn print_swap_balance() {
+    swap_balance().await
 }
