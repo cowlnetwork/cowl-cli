@@ -31,7 +31,7 @@ pub async fn withdraw_cowl(amount: String) -> Option<String> {
         *COWL_CEP_18_COOL_SYMBOL,
     ));
 
-    call_withdraw_cowl_entry_point(&cowl_swap_contract_package_hash, amount).await;
+    call_withdraw_cowl_entry_point(&key_pair, &cowl_swap_contract_package_hash, amount).await;
 
     if !answer {
         log::warn!("Withdraw aborted.");

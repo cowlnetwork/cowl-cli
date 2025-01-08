@@ -304,6 +304,15 @@ pub enum Commands {
         )]
         amount: String,
     },
+    #[command(name = "withdraw-cspr", about = "Withdraw COWL")]
+    WithdrawCspr {
+        /// The amount to withdraw.
+        #[arg(
+            long,
+            help = "The amount to withdraw in the smallest unit (e.g., '100000000000' represents 100 CSPR). Example: '100000000000'"
+        )]
+        amount: String,
+    },
 }
 
 pub async fn run() {
@@ -500,6 +509,9 @@ pub async fn run() {
         Commands::WithdrawCowl { amount } => {
             commands::withdraw_cowl::print_withdraw_cowl(amount).await
         }
+        Commands::WithdrawCspr { amount } => {
+            commands::withdraw_cspr::print_withdraw_cspr(amount).await
+        }
     }
 }
 
@@ -651,11 +663,17 @@ impl Display for Commands {
             ),
             Commands::WithdrawCowl { amount } => write!(
                 f,
-                "Withdraw {} {} ({} {}) \nfrom Installer",
+                "Withdraw {} {} ({} {}) \nto Installer",
                 format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
                 *COWL_CEP_18_TOKEN_SYMBOL,
                 amount,
                 *COWL_CEP_18_COOL_SYMBOL,
+            ),
+            Commands::WithdrawCspr { amount } => write!(
+                f,
+                "Withdraw {} CSPR ({} motes) \nto Installer",
+                format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
+                amount,
             ),
         }
     }

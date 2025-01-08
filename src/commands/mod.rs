@@ -11,3 +11,4 @@ pub mod transfer;
 pub mod transfer_from;
 pub mod upgrade_events;
 pub mod withdraw_cowl;
+pub mod withdraw_cspr;

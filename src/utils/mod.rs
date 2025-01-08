@@ -16,7 +16,7 @@ use constants::{
     CHAIN_NAME, COWL_CEP18_TOKEN_CONTRACT_HASH_NAME, COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME,
     COWL_SET_MODALITIES_CALL_PAYMENT_AMOUNT, COWL_SWAP_NAME,
     COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT, COWL_VESTING_CALL_PAYMENT_AMOUNT, COWL_VESTING_NAME,
-    COWL_WITHDRAW_CALL_PAYMENT_AMOUNT, EVENTS_ADDRESS, INSTALLER, RPC_ADDRESS, TTL,
+    COWL_WITHDRAW_CSPR_CALL_PAYMENT_AMOUNT, EVENTS_ADDRESS, INSTALLER, RPC_ADDRESS, TTL,
 };
 use cowl_vesting::constants::{
     ARG_AMOUNT, ARG_EVENTS_MODE, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER, ARG_VESTING_TYPE,
@@ -26,12 +26,13 @@ use cowl_vesting::constants::{
 };
 
 use cowl_swap::constants::{
-    ENTRY_POINT_WITHDRAW_COWL, PREFIX_CONTRACT_NAME as PREFIX_CONTRACT_SWAP_NAME,
+    ENTRY_POINT_WITHDRAW_COWL, ENTRY_POINT_WITHDRAW_CSPR,
+    PREFIX_CONTRACT_NAME as PREFIX_CONTRACT_SWAP_NAME,
     PREFIX_CONTRACT_PACKAGE_NAME as PREFIX_CONTRACT_PACKAGE_SWAP_NAME,
 };
 use cowl_vesting::enums::{EventsMode, VestingType};
 use cowl_vesting::vesting::VestingData;
-use keys::format_base64_to_pem;
+use keys::{format_base64_to_pem, KeyPair};
 use num_format::{Locale, ToFormattedString};
 use once_cell::sync::Lazy;
 use serde_json::{json, to_string, Value};
@@ -477,8 +478,11 @@ pub async fn call_token_set_allowance_entry_point(
     .await;
 }
 
-pub async fn call_withdraw_cowl_entry_point(contract_vesting_package: &str, amount: String) {
-    let key_pair = get_key_pair_from_vesting(INSTALLER).await.unwrap();
+pub async fn call_withdraw_cowl_entry_point(
+    key_pair: &KeyPair,
+    contract_swap_package: &str,
+    amount: String,
+) {
     let args = json!([
         {
             "name": ARG_AMOUNT,
@@ -489,12 +493,37 @@ pub async fn call_withdraw_cowl_entry_point(contract_vesting_package: &str, amou
     .to_string();
 
     execute_contract_entry_point(
-        contract_vesting_package,
+        contract_swap_package,
         ENTRY_POINT_WITHDRAW_COWL,
         &args,
-        &COWL_WITHDRAW_CALL_PAYMENT_AMOUNT,
+        &COWL_WITHDRAW_CSPR_CALL_PAYMENT_AMOUNT,
         &key_pair.public_key,
-        format_base64_to_pem(&key_pair.private_key_base64.unwrap()),
+        format_base64_to_pem(&key_pair.private_key_base64.clone().unwrap()),
+    )
+    .await;
+}
+
+pub async fn call_withdraw_cspr_entry_point(
+    key_pair: &KeyPair,
+    contract_swap_package: &str,
+    amount: String,
+) {
+    let args = json!([
+        {
+            "name": ARG_AMOUNT,
+            "type": "U512",
+            "value": amount
+        }
+    ])
+    .to_string();
+
+    execute_contract_entry_point(
+        contract_swap_package,
+        ENTRY_POINT_WITHDRAW_CSPR,
+        &args,
+        &COWL_WITHDRAW_CSPR_CALL_PAYMENT_AMOUNT,
+        &key_pair.public_key,
+        format_base64_to_pem(&key_pair.private_key_base64.clone().unwrap()),
     )
     .await;
 }
