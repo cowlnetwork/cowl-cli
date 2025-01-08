@@ -594,7 +594,7 @@ mod tests_install_vesting {
 
 mod tests_swap {
     use assert_cmd::Command;
-    use cowl_cli::utils::constants::COWL_CEP_18_TOKEN_SYMBOL;
+    use cowl_cli::utils::constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL};
     use once_cell::sync::Lazy;
     use std::sync::Arc;
     use tokio::sync::Mutex;
@@ -717,5 +717,24 @@ mod tests_swap {
             .stdout(predicates::str::contains("Processed deploy hash"))
             .stdout(predicates::str::contains("Balance CSPR for Installer"))
             .stdout(predicates::str::contains(" motes"));
+    }
+
+    #[tokio::test]
+    async fn test_swap_balance_cowl_command() {
+        setup().await;
+        let mut cmd = Command::cargo_bin(BINARY).unwrap();
+
+        cmd.arg("swap-balance-cowl")
+            .assert()
+            .success()
+            .stdout(predicates::str::contains(
+                "Command executed: Get Swap contract balance".to_string(),
+            ))
+            .stdout(predicates::str::contains(
+                COWL_CEP_18_TOKEN_SYMBOL.to_string(),
+            ))
+            .stdout(predicates::str::contains(
+                COWL_CEP_18_COOL_SYMBOL.to_string(),
+            ));
     }
 }

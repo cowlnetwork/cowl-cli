@@ -26,7 +26,7 @@ use cowl_vesting::constants::{
 };
 
 use cowl_swap::constants::{
-    ENTRY_POINT_WITHDRAW_COWL, ENTRY_POINT_WITHDRAW_CSPR,
+    ENTRY_POINT_BALANCE_COWL, ENTRY_POINT_WITHDRAW_COWL, ENTRY_POINT_WITHDRAW_CSPR,
     PREFIX_CONTRACT_NAME as PREFIX_CONTRACT_SWAP_NAME,
     PREFIX_CONTRACT_PACKAGE_NAME as PREFIX_CONTRACT_PACKAGE_SWAP_NAME,
 };
@@ -521,6 +521,18 @@ pub async fn call_withdraw_cspr_entry_point(
         contract_swap_package,
         ENTRY_POINT_WITHDRAW_CSPR,
         &args,
+        &COWL_WITHDRAW_CSPR_CALL_PAYMENT_AMOUNT,
+        &key_pair.public_key,
+        format_base64_to_pem(&key_pair.private_key_base64.clone().unwrap()),
+    )
+    .await;
+}
+
+pub async fn call_balance_cowl_entry_point(key_pair: &KeyPair, contract_swap_package: &str) {
+    execute_contract_entry_point(
+        contract_swap_package,
+        ENTRY_POINT_BALANCE_COWL,
+        "",
         &COWL_WITHDRAW_CSPR_CALL_PAYMENT_AMOUNT,
         &key_pair.public_key,
         format_base64_to_pem(&key_pair.private_key_base64.clone().unwrap()),

@@ -7,6 +7,7 @@ pub mod deposit_cspr;
 pub mod fund;
 pub mod info;
 pub mod status;
+pub mod swap_balance_cowl;
 pub mod transfer;
 pub mod transfer_from;
 pub mod upgrade_events;

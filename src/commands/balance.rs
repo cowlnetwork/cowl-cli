@@ -6,7 +6,7 @@ use crate::utils::{
     sdk, stored_value_to_parsed_string,
 };
 use casper_rust_wasm_sdk::{
-    helpers::{get_base64_key_from_account_hash, motes_to_cspr},
+    helpers::{get_base64_key_from_account_hash, get_base64_key_from_key_hash, motes_to_cspr},
     types::{key::Key, purse_identifier::PurseIdentifier},
 };
 use cowl_vesting::{constants::DICT_BALANCES, enums::VestingType};
@@ -33,15 +33,31 @@ pub async fn get_balance(
             "".to_string()
         })
     } else if let Some(key) = maybe_key.clone() {
-        get_base64_key_from_account_hash(&key.clone().into_account().unwrap().to_formatted_string())
+        if key.to_formatted_string().contains("account") {
+            get_base64_key_from_account_hash(
+                &key.clone()
+                    .into_account()
+                    .expect("get_balance method expects an account")
+                    .to_formatted_string(),
+            )
             .unwrap_or_else(|err| {
                 log::error!(
-                    "Failed to retrieve account_hash for {}: {:?}",
+                    "Failed to retrieve account hash for {}: {:?}",
                     key.to_formatted_string(),
                     err
                 );
                 "".to_string()
             })
+        } else {
+            get_base64_key_from_key_hash(&key.clone().to_formatted_string()).unwrap_or_else(|err| {
+                log::error!(
+                    "Failed to retrieve contract hash for {}: {:?}",
+                    key.to_formatted_string(),
+                    err
+                );
+                "".to_string()
+            })
+        }
     } else {
         log::error!("Both vesting_type and vesting_key are missing.");
         return DEFAULT_BALANCE.to_string();
