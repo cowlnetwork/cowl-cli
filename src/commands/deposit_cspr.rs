@@ -1,13 +1,13 @@
 use crate::{
-    commands::balance::get_cspr_balance,
+    commands::balance::print_balance,
     utils::{
         config::get_key_pair_from_vesting,
         constants::{
-            CHAIN_NAME, COWL_DEPOSIT_CSPR_CALL_PAYMENT_AMOUNT, DEFAULT_BALANCE,
+            CHAIN_NAME, COWL_DEPOSIT_CSPR_CALL_PAYMENT_AMOUNT,
             DEFAULT_COWL_SWAP_DEPOSIT_CSPR_SESSION, EVENTS_ADDRESS, INSTALLER, TTL, WASM_PATH,
         },
         format_with_thousands_separator, get_contract_swap_hash_keys,
-        keys::{format_base64_to_pem, get_key_pair_from_key},
+        keys::format_base64_to_pem,
         prompt_yes_no, read_wasm_file, sdk,
     },
 };
@@ -25,7 +25,7 @@ use cowl_vesting::constants::ARG_AMOUNT;
 use serde_json::json;
 use std::process;
 
-pub async fn deposit_cspr(amount: String) -> Option<(String, String)> {
+pub async fn deposit_cspr(amount: String) {
     let (_, cowl_swap_contract_package_hash) = match get_contract_swap_hash_keys().await {
         Some((hash, package_hash)) => (hash, package_hash),
         None => (String::from(""), String::from("")),
@@ -48,7 +48,7 @@ pub async fn deposit_cspr(amount: String) -> Option<(String, String)> {
 
     if !answer {
         log::warn!("Transfer aborted.");
-        return None;
+        return;
     }
 
     let deploy_params = DeployStrParams::new(
@@ -70,7 +70,7 @@ pub async fn deposit_cspr(amount: String) -> Option<(String, String)> {
         Ok(module_bytes) => module_bytes,
         Err(err) => {
             log::error!("Error reading file {}: {:?}", path, err);
-            return None;
+            return;
         }
     };
     session_params.set_session_bytes(module_bytes.into());
@@ -162,24 +162,17 @@ pub async fn deposit_cspr(amount: String) -> Option<(String, String)> {
     log::info!("Cost {cost} CSPR ({motes} motes)");
 
     let key = Key::from_account(key_pair.public_key.to_account_hash());
-    let (vesting_type, key_pair) = get_key_pair_from_key(&key).await;
+    log::info!("Balance for {}", key_pair.public_key.to_string());
+    print_balance(None, Some(key.clone())).await;
 
-    let default_balance = (DEFAULT_BALANCE.to_string(), DEFAULT_BALANCE.to_string());
-
-    let identifier = key.to_formatted_string();
-
-    let balance = match (vesting_type, key_pair) {
-        (Some(vesting_type), Some(key_pair)) => get_cspr_balance(&key_pair, &vesting_type).await,
-        (None, Some(key_pair)) => get_cspr_balance(&key_pair, &identifier).await,
-        _ => default_balance,
-    };
-    Some(balance)
+    let key = Key::from_formatted_str(&cowl_swap_contract_package_hash).ok();
+    log::info!(
+        "Balance for Swap Contract Package {}",
+        cowl_swap_contract_package_hash
+    );
+    print_balance(None, key).await;
 }
 
 pub async fn print_deposit_cspr(amount: String) {
-    if let Some((balance, balance_motes)) = deposit_cspr(amount).await {
-        log::info!("Balance CSPR for Installer");
-        log::info!("{} {}", format_with_thousands_separator(&balance), "CSPR");
-        log::info!("{} {}", balance_motes, "motes");
-    }
+    deposit_cspr(amount).await
 }

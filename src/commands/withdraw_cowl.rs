@@ -1,5 +1,5 @@
 use crate::{
-    commands::balance::get_balance,
+    commands::balance::print_balance,
     utils::{
         call_withdraw_cowl_entry_point,
         config::get_key_pair_from_vesting,
@@ -10,7 +10,7 @@ use crate::{
 use casper_rust_wasm_sdk::{helpers::motes_to_cspr, types::key::Key};
 use std::process;
 
-pub async fn withdraw_cowl(amount: String) -> Option<String> {
+pub async fn withdraw_cowl(amount: String) {
     let (_, cowl_swap_contract_package_hash) = match get_contract_swap_hash_keys().await {
         Some((hash, package_hash)) => (hash, package_hash),
         None => (String::from(""), String::from("")),
@@ -35,23 +35,21 @@ pub async fn withdraw_cowl(amount: String) -> Option<String> {
 
     if !answer {
         log::warn!("Withdraw aborted.");
-        return None;
+        return;
     }
 
-    let key = Some(Key::from_account(key_pair.public_key.to_account_hash()));
+    let key = Key::from_account(key_pair.public_key.to_account_hash());
+    log::info!("Balance for {}", key_pair.public_key.to_string());
+    print_balance(None, Some(key.clone())).await;
 
-    let to_balance = get_balance(None, key).await;
-    Some(to_balance)
+    let key = Key::from_formatted_str(&cowl_swap_contract_package_hash).ok();
+    log::info!(
+        "Balance for Swap Contract Package {}",
+        cowl_swap_contract_package_hash
+    );
+    print_balance(None, key).await;
 }
 
 pub async fn print_withdraw_cowl(amount: String) {
-    if let Some(balance) = withdraw_cowl(amount).await {
-        log::info!("Balance for Installer");
-        log::info!(
-            "{} {}",
-            format_with_thousands_separator(&motes_to_cspr(&balance).unwrap()),
-            *COWL_CEP_18_TOKEN_SYMBOL
-        );
-        log::info!("{} {}", balance, *COWL_CEP_18_COOL_SYMBOL);
-    }
+    withdraw_cowl(amount).await
 }

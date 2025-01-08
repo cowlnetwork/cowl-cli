@@ -1,4 +1,4 @@
-use super::balance::{get_balance, get_cspr_balance};
+use super::balance::{get_balance, get_cspr_account_balance};
 use crate::utils::{
     config::CONFIG_LOCK,
     constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL},
@@ -32,7 +32,7 @@ pub async fn list_funded_addresses() -> Option<IndexMap<String, IndexMap<String,
                     .to_formatted_string(),
             );
 
-            let (balance, balance_motes) = get_cspr_balance(key_pair, vesting_type).await;
+            let (balance, balance_motes) = get_cspr_account_balance(key_pair, vesting_type).await;
 
             key_map.insert("balance_motes".to_string(), balance_motes);
 

@@ -3,6 +3,7 @@ use casper_rust_wasm_sdk::deploy_watcher::watcher::EventParseResult;
 use casper_rust_wasm_sdk::helpers::motes_to_cspr;
 use casper_rust_wasm_sdk::rpcs::get_dictionary_item::DictionaryItemInput;
 use casper_rust_wasm_sdk::rpcs::query_global_state::{KeyIdentifierInput, QueryGlobalStateParams};
+use casper_rust_wasm_sdk::types::contract_hash::ContractHash;
 use casper_rust_wasm_sdk::types::deploy_hash::DeployHash;
 use casper_rust_wasm_sdk::types::deploy_params::deploy_str_params::DeployStrParams;
 use casper_rust_wasm_sdk::types::deploy_params::dictionary_item_str_params::DictionaryItemStrParams;
@@ -10,6 +11,7 @@ use casper_rust_wasm_sdk::types::deploy_params::payment_str_params::PaymentStrPa
 use casper_rust_wasm_sdk::types::deploy_params::session_str_params::SessionStrParams;
 use casper_rust_wasm_sdk::types::key::Key;
 use casper_rust_wasm_sdk::types::public_key::PublicKey;
+use casper_rust_wasm_sdk::types::uref::URef;
 use casper_rust_wasm_sdk::{types::verbosity::Verbosity, SDK};
 use config::get_key_pair_from_vesting;
 use constants::{
@@ -189,6 +191,89 @@ pub async fn get_contract_swap_hash_keys() -> Option<(String, String)> {
         &format!("{PREFIX_CONTRACT_PACKAGE_SWAP_NAME}_{}", *COWL_SWAP_NAME),
     )
     .await
+}
+
+pub async fn get_contract_swap_purse(contract_package: &Key) -> Option<URef> {
+    let query_params: QueryGlobalStateParams = QueryGlobalStateParams {
+        key: KeyIdentifierInput::Key(contract_package.clone()),
+        path: None,
+        maybe_global_state_identifier: None,
+        state_root_hash: None,
+        maybe_block_id: None,
+        node_address: None,
+        verbosity: None,
+    };
+
+    let query_global_state = sdk().query_global_state(query_params).await;
+    let query_global_state_result = query_global_state.unwrap_or_else(|_| {
+        panic!("Failed to query global state");
+    });
+
+    let json_string = to_string(&query_global_state_result.result.stored_value)
+        .unwrap_or_else(|_| panic!("Failed to convert stored value to string"));
+
+    let parsed_json: Value =
+        serde_json::from_str(&json_string).unwrap_or_else(|_| panic!("Failed to parse JSON"));
+
+    let versions = parsed_json["ContractPackage"]["versions"]
+        .as_array()
+        .unwrap_or_else(|| panic!("named_keys is not an array"));
+
+    // Find the contract hash
+    let contract_hash = versions
+        .last()
+        .and_then(|obj| obj.get("contract_hash"))
+        .and_then(|value| value.as_str())
+        .unwrap_or_else(|| {
+            log::debug!("Contract hash not found in the last version");
+            ""
+        });
+
+    let contract_hash = ContractHash::from_formatted_str(contract_hash)
+        .unwrap_or_else(|_| panic!("contract_hash not found in package versions"));
+
+    let contract_key = Key::from_formatted_str(
+        &contract_hash
+            .to_formatted_string()
+            .replace("contract", "hash"),
+    )
+    .unwrap_or_else(|_| panic!("contract_hash should convert to key"));
+
+    let query_params: QueryGlobalStateParams = QueryGlobalStateParams {
+        key: KeyIdentifierInput::Key(contract_key),
+        path: None,
+        maybe_global_state_identifier: None,
+        state_root_hash: None,
+        maybe_block_id: None,
+        node_address: None,
+        verbosity: None,
+    };
+
+    let query_global_state = sdk().query_global_state(query_params).await;
+    let query_global_state_result = query_global_state.unwrap_or_else(|_| {
+        panic!("Failed to query global state");
+    });
+
+    let json_string = to_string(&query_global_state_result.result.stored_value)
+        .unwrap_or_else(|_| panic!("Failed to convert stored value to string"));
+
+    let parsed_json: Value =
+        serde_json::from_str(&json_string).unwrap_or_else(|_| panic!("Failed to parse JSON"));
+
+    let named_keys = parsed_json["Contract"]["named_keys"]
+        .as_array()
+        .unwrap_or_else(|| panic!("named_keys is not an array"));
+
+    // Find the purse
+    let purse_uref_string = named_keys
+        .iter()
+        .find(|obj| obj["name"] == Value::String("purse".to_string()))
+        .and_then(|obj| obj["key"].as_str())
+        .unwrap_or_else(|| {
+            log::debug!("Contract purse key not found in named_keys");
+            ""
+        });
+    URef::from_formatted_str(purse_uref_string).ok()
 }
 
 pub fn get_dictionary_item_params(

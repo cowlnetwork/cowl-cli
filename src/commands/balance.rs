@@ -1,7 +1,8 @@
 use crate::utils::{
     config::get_key_pair_from_vesting,
     constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL, DEFAULT_BALANCE},
-    format_with_thousands_separator, get_contract_cep18_hash_keys, get_dictionary_item_params,
+    format_with_thousands_separator, get_contract_cep18_hash_keys, get_contract_swap_purse,
+    get_dictionary_item_params,
     keys::{get_key_pair_from_key, KeyPair},
     sdk, stored_value_to_parsed_string,
 };
@@ -175,7 +176,7 @@ pub async fn print_balance(maybe_vesting_type: Option<VestingType>, maybe_key: O
     log::info!("\n{}", json_output);
 }
 
-pub async fn get_cspr_balance(key_pair: &KeyPair, vesting_type: &str) -> (String, String) {
+pub async fn get_cspr_account_balance(key_pair: &KeyPair, vesting_type: &str) -> (String, String) {
     let purse_identifier = PurseIdentifier::from_main_purse_under_account_hash(
         key_pair.public_key.clone().to_account_hash(),
     );
@@ -202,6 +203,31 @@ pub async fn get_cspr_balance(key_pair: &KeyPair, vesting_type: &str) -> (String
     (balance, balance_motes)
 }
 
+pub async fn get_cspr_contract_balance(contract_package: &Key) -> (String, String) {
+    let purse_uref = get_contract_swap_purse(contract_package)
+        .await
+        .expect("contract should have a purse Uref");
+
+    let purse_identifier = PurseIdentifier::from_purse_uref(purse_uref);
+
+    let maybe_balance_motes = sdk()
+        .query_balance(None, None, Some(purse_identifier), None, None, None, None)
+        .await;
+
+    let balance_motes = if let Ok(balance_motes) = maybe_balance_motes {
+        balance_motes.result.balance.to_string()
+    } else {
+        log::warn!(
+            "No CSPR balance for Contract Package\n\
+            - Key: {:?}\n",
+            contract_package,
+        );
+        DEFAULT_BALANCE.to_string()
+    };
+    let balance = motes_to_cspr(&balance_motes).unwrap();
+    (balance, balance_motes)
+}
+
 async fn get_cspr_balance_from_vesting_or_key(
     maybe_vesting_type: Option<VestingType>,
     maybe_key: Option<Key>,
@@ -213,17 +239,16 @@ async fn get_cspr_balance_from_vesting_or_key(
             let key_pair = get_key_pair_from_vesting(&vesting_type.to_string())
                 .await
                 .unwrap();
-            get_cspr_balance(&key_pair, &vesting_type.to_string()).await
+            get_cspr_account_balance(&key_pair, &vesting_type.to_string()).await
         }
         (_, Some(key)) => {
             let (vesting_type, key_pair) = get_key_pair_from_key(&key).await;
-
             match (vesting_type, key_pair) {
                 (Some(vesting_type), Some(key_pair)) => {
-                    get_cspr_balance(&key_pair, &vesting_type).await
+                    get_cspr_account_balance(&key_pair, &vesting_type).await
                 }
-                (None, Some(key_pair)) => get_cspr_balance(&key_pair, identifier).await,
-                _ => default_balance,
+                (None, Some(key_pair)) => get_cspr_account_balance(&key_pair, identifier).await,
+                _ => get_cspr_contract_balance(&key).await,
             }
         }
         _ => default_balance,

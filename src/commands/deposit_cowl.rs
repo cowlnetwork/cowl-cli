@@ -1,5 +1,5 @@
 use crate::{
-    commands::balance::get_balance,
+    commands::balance::print_balance,
     utils::{
         constants::{
             CHAIN_NAME, COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL,
@@ -26,7 +26,7 @@ use cowl_vesting::constants::ARG_AMOUNT;
 use serde_json::json;
 use std::process;
 
-pub async fn deposit_cowl(from: PublicKey, amount: String) -> Option<String> {
+pub async fn deposit_cowl(from: PublicKey, amount: String) {
     let (cowl_cep18_token_contract_hash, cowl_cep18_token_package_hash) =
         match get_contract_cep18_hash_keys().await {
             Some((hash, package_hash)) => (hash, package_hash),
@@ -56,7 +56,7 @@ pub async fn deposit_cowl(from: PublicKey, amount: String) -> Option<String> {
 
     if !answer {
         log::warn!("Transfer aborted.");
-        return None;
+        return;
     }
 
     let deploy_params = DeployStrParams::new(
@@ -76,7 +76,7 @@ pub async fn deposit_cowl(from: PublicKey, amount: String) -> Option<String> {
         Ok(module_bytes) => module_bytes,
         Err(err) => {
             log::error!("Error reading file {}: {:?}", path, err);
-            return None;
+            return;
         }
     };
     session_params.set_session_bytes(module_bytes.into());
@@ -174,18 +174,17 @@ pub async fn deposit_cowl(from: PublicKey, amount: String) -> Option<String> {
 
     let key = Some(Key::from_account(from.to_account_hash()));
 
-    let to_balance = get_balance(None, key).await;
-    Some(to_balance)
+    log::info!("Balance for {}", from.to_string());
+    print_balance(None, key.clone()).await;
+
+    let key = Key::from_formatted_str(&cowl_swap_contract_package_hash).ok();
+    log::info!(
+        "Balance for Swap Contract Package {}",
+        cowl_swap_contract_package_hash
+    );
+    print_balance(None, key).await;
 }
 
 pub async fn print_deposit_cowl(from: PublicKey, amount: String) {
-    if let Some(balance) = deposit_cowl(from.clone(), amount).await {
-        log::info!("Balance for {}", from.to_string());
-        log::info!(
-            "{} {}",
-            format_with_thousands_separator(&motes_to_cspr(&balance).unwrap()),
-            *COWL_CEP_18_TOKEN_SYMBOL
-        );
-        log::info!("{} {}", balance, *COWL_CEP_18_COOL_SYMBOL);
-    }
+    deposit_cowl(from.clone(), amount).await
 }

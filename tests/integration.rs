@@ -621,7 +621,7 @@ mod tests_swap {
     }
 
     #[tokio::test]
-    async fn test_desposi_cowl_command() {
+    async fn test_desposit_cowl_command() {
         setup().await;
         let mut cmd = Command::cargo_bin(BINARY).unwrap();
         let from = "01fbe77037c317c12af3a6af08d02d9fc6b3a1636237ae48f77b198a9483d94801"; // Liquidity
@@ -645,12 +645,13 @@ mod tests_swap {
             .stdout(predicates::str::contains(from))
             .stdout(predicates::str::contains("Wait deploy_hash"))
             .stdout(predicates::str::contains("Processed deploy hash"))
-            .stdout(predicates::str::contains("CSPR"))
+            .stdout(predicates::str::contains("Balance for 01"))
+            .stdout(predicates::str::contains("Balance for Swap"))
             .stdout(predicates::str::contains(COWL_CEP_18_TOKEN_SYMBOL.clone()));
     }
 
     #[tokio::test]
-    async fn test_desposi_cspr_command() {
+    async fn test_desposit_cspr_command() {
         setup().await;
         let mut cmd = Command::cargo_bin(BINARY).unwrap();
         let amount = "100000000000";
@@ -668,7 +669,8 @@ mod tests_swap {
             ))
             .stdout(predicates::str::contains("Wait deploy_hash"))
             .stdout(predicates::str::contains("Processed deploy hash"))
-            .stdout(predicates::str::contains("Balance CSPR for Installer"))
+            .stdout(predicates::str::contains("Balance for 01"))
+            .stdout(predicates::str::contains("Balance for Swap"))
             .stdout(predicates::str::contains(" motes"));
     }
 
@@ -692,7 +694,8 @@ mod tests_swap {
             )))
             .stdout(predicates::str::contains("Wait deploy_hash"))
             .stdout(predicates::str::contains("Processed deploy hash"))
-            .stdout(predicates::str::contains("Balance for Installer"))
+            .stdout(predicates::str::contains("Balance for 01"))
+            .stdout(predicates::str::contains("Balance for Swap"))
             .stdout(predicates::str::contains(COWL_CEP_18_TOKEN_SYMBOL.clone()));
     }
 
@@ -715,7 +718,8 @@ mod tests_swap {
             ))
             .stdout(predicates::str::contains("Wait deploy_hash"))
             .stdout(predicates::str::contains("Processed deploy hash"))
-            .stdout(predicates::str::contains("Balance CSPR for Installer"))
+            .stdout(predicates::str::contains("Balance for 01"))
+            .stdout(predicates::str::contains("Balance for Swap"))
             .stdout(predicates::str::contains(" motes"));
     }
 

@@ -1,17 +1,14 @@
-use crate::utils::{
-    call_withdraw_cspr_entry_point,
-    config::get_key_pair_from_vesting,
-    constants::{DEFAULT_BALANCE, INSTALLER},
-    format_with_thousands_separator, get_contract_swap_hash_keys,
-    keys::get_key_pair_from_key,
-    prompt_yes_no,
+use crate::{
+    commands::balance::print_balance,
+    utils::{
+        call_withdraw_cspr_entry_point, config::get_key_pair_from_vesting, constants::INSTALLER,
+        format_with_thousands_separator, get_contract_swap_hash_keys, prompt_yes_no,
+    },
 };
 use casper_rust_wasm_sdk::{helpers::motes_to_cspr, types::key::Key};
 use std::process;
 
-use super::balance::get_cspr_balance;
-
-pub async fn withdraw_cspr(amount: String) -> Option<(String, String)> {
+pub async fn withdraw_cspr(amount: String) {
     let (_, cowl_swap_contract_package_hash) = match get_contract_swap_hash_keys().await {
         Some((hash, package_hash)) => (hash, package_hash),
         None => (String::from(""), String::from("")),
@@ -36,28 +33,21 @@ pub async fn withdraw_cspr(amount: String) -> Option<(String, String)> {
 
     if !answer {
         log::warn!("Withdraw aborted.");
-        return None;
+        return;
     }
 
     let key = Key::from_account(key_pair.public_key.to_account_hash());
-    let (vesting_type, key_pair) = get_key_pair_from_key(&key).await;
+    log::info!("Balance for {}", key_pair.public_key.to_string());
+    print_balance(None, Some(key.clone())).await;
 
-    let default_balance = (DEFAULT_BALANCE.to_string(), DEFAULT_BALANCE.to_string());
-
-    let identifier = key.to_formatted_string();
-
-    let balance = match (vesting_type, key_pair) {
-        (Some(vesting_type), Some(key_pair)) => get_cspr_balance(&key_pair, &vesting_type).await,
-        (None, Some(key_pair)) => get_cspr_balance(&key_pair, &identifier).await,
-        _ => default_balance,
-    };
-    Some(balance)
+    let key = Key::from_formatted_str(&cowl_swap_contract_package_hash).ok();
+    log::info!(
+        "Balance for Swap Contract Package {}",
+        cowl_swap_contract_package_hash
+    );
+    print_balance(None, key).await;
 }
 
 pub async fn print_withdraw_cspr(amount: String) {
-    if let Some((balance, balance_motes)) = withdraw_cspr(amount).await {
-        log::info!("Balance CSPR for Installer");
-        log::info!("{} {}", format_with_thousands_separator(&balance), "CSPR");
-        log::info!("{} {}", balance_motes, "motes");
-    }
+    withdraw_cspr(amount).await
 }
