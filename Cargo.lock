@@ -321,7 +321,7 @@ dependencies = [
 [[package]]
 name = "casper-rust-wasm-sdk"
 version = "1.0.0"
-source = "git+https://github.com/casper-ecosystem/rustSDK?branch=dev-1.6#7888c0ce18a7812c6ee2c7a6c3af1af55357120c"
+source = "git+https://github.com/casper-ecosystem/rustSDK?branch=dev-1.6#ae8ebfeb6f602187632925fc0a7d10eed8bf2c7e"
 dependencies = [
  "base16",
  "base64 0.22.1",
