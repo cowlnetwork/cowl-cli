@@ -93,11 +93,7 @@ pub async fn print_update_times(start_time: String, duration: String) {
         actual_start_time,
         start_time_datetime
     );
-    log::info!(
-        "END: {}_u64, date: {}",
-        actual_end_time,
-        end_time_datetime
-    );
+    log::info!("END: {}_u64, date: {}", actual_end_time, end_time_datetime);
 }
 
 // Function to convert a u64 timestamp to a human-readable DateTime<Utc>
