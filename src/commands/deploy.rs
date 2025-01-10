@@ -20,7 +20,7 @@ use casper_rust_wasm_sdk::{
         deploy_params::{deploy_str_params::DeployStrParams, session_str_params::SessionStrParams},
     },
 };
-use cowl_swap::constants::{ARG_END_TIME, ARG_START_TIME};
+use cowl_swap::constants::{ARG_DURATION, ARG_START_TIME};
 use cowl_vesting::{
     constants::{ARG_COWL_CEP18_CONTRACT_PACKAGE, ARG_UPGRADE_FLAG},
     enums::EventsMode,
@@ -105,7 +105,7 @@ static ARGS_SWAP_JSON: Lazy<Mutex<Value>> = Lazy::new(|| {
             "value":0_u64
         },
         {
-            "name": ARG_END_TIME,
+            "name": ARG_DURATION,
             "type": "U64",
             "value": 1_u64
         },
