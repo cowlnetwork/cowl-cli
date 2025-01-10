@@ -771,4 +771,63 @@ mod tests_swap {
             .stdout(predicates::str::contains("_u64"))
             .stdout(predicates::str::contains("UTC"));
     }
+
+    #[tokio::test]
+    async fn test_cspr_to_cowl_command() {
+        setup().await;
+
+        let mut cmd = Command::cargo_bin(BINARY).unwrap();
+        let from = "01fbe77037c317c12af3a6af08d02d9fc6b3a1636237ae48f77b198a9483d94801"; // Liquidity
+        let amount = "100000000000"; // 100 CSPR
+        let base64_key = "MC4CAQAwBQYDK2VwBCIEIOeKQNbCmsyZme2t5U7Lulnn2TfdZkiFANeg89Sy7Pzn";
+        let confirmation_response = "y\n";
+
+        cmd.arg("deposit-cowl")
+            .arg("--from")
+            .arg(from)
+            .arg("--amount")
+            .arg(amount)
+            .write_stdin(format!("{base64_key}\n{confirmation_response}"))
+            .assert()
+            .success();
+
+        let mut cmd = Command::cargo_bin(BINARY).unwrap();
+        let amount = "10000000000"; // 10 CSPR > 30 COWL
+
+        let start_time = (Utc::now().timestamp() as u64).to_string();
+        let duration = 3600u64.to_string();
+
+        cmd.arg("update-times")
+            .arg("--start-time")
+            .arg(&start_time)
+            .arg("--duration")
+            .arg(&duration)
+            .write_stdin(confirmation_response.to_string())
+            .assert()
+            .success()
+            .stdout(predicates::str::contains(
+                "Command executed: Update times start: ".to_string(),
+            ));
+
+        let mut cmd = Command::cargo_bin(BINARY).unwrap();
+        let from = "01868e06026ba9c8695f6f3bb10d44782004dbc144ff65017cf484436f9cf7b0f6"; // User-1
+
+        cmd.arg("cspr-to-cowl")
+            .arg("--from")
+            .arg(from)
+            .arg("--amount")
+            .arg(amount)
+            .write_stdin(confirmation_response.to_string())
+            .write_stdin(confirmation_response.to_string())
+            .assert()
+            .success()
+            .stdout(predicates::str::contains(
+                "Command executed: Swap 10.00 CSPR".to_string(),
+            ))
+            .stdout(predicates::str::contains("Wait deploy_hash"))
+            .stdout(predicates::str::contains("Processed deploy hash"))
+            .stdout(predicates::str::contains("Balance for 01"))
+            .stdout(predicates::str::contains("Balance for Swap"))
+            .stdout(predicates::str::contains(" motes"));
+    }
 }

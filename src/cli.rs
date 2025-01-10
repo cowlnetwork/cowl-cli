@@ -318,7 +318,7 @@ pub enum Commands {
         about = "Retrieve the balance of the swap contract"
     )]
     SwapBalance,
-    #[command(name = "swap-cspr-to-cowl", about = "Swap CSPR to COWL")]
+    #[command(name = "cspr-to-cowl", about = "Swap CSPR to COWL")]
     CsprToCowl {
         /// Specify the source (public key signing).
         #[arg(
