@@ -3,7 +3,7 @@ use crate::{
     utils::{
         constants::{
             CHAIN_NAME, COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL,
-            COWL_COWL_TO_CSPR_CALL_PAYMENT_AMOUNT, DEFAULT_COWL_SWAP_COWL_TO_CSPR_SESSION,
+            COWL_COWL_TO_CSPR_CALL_PAYMENT_AMOUNT, DEFAULT_SWAP_COWL_TO_CSPR_SESSION,
             EVENTS_ADDRESS, TTL, WASM_PATH,
         },
         format_with_thousands_separator, get_contract_cep18_hash_keys, get_contract_swap_hash_keys,
@@ -75,7 +75,7 @@ pub async fn cowl_to_cspr(from: PublicKey, amount: String) {
     let session_params = SessionStrParams::default();
     let path = &format!(
         "{}{}.wasm",
-        WASM_PATH, DEFAULT_COWL_SWAP_COWL_TO_CSPR_SESSION
+        WASM_PATH, DEFAULT_SWAP_COWL_TO_CSPR_SESSION
     );
     let module_bytes = match read_wasm_file(path) {
         Ok(module_bytes) => module_bytes,

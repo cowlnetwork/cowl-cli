@@ -4,8 +4,8 @@ use crate::utils::{
         CHAIN_NAME, COWL_CEP_18_INSTALL_PAYMENT_AMOUNT, COWL_CEP_18_TOKEN_DECIMALS,
         COWL_CEP_18_TOKEN_NAME, COWL_CEP_18_TOKEN_SYMBOL, COWL_SWAP_INSTALL_PAYMENT_AMOUNT,
         COWL_SWAP_NAME, COWL_VESTING_INSTALL_PAYMENT_AMOUNT, COWL_VESTING_NAME,
-        DEFAULT_COWL_CEP_18_TOKEN_DECIMALS, DEFAULT_COWL_CEP_18_TOKEN_NAME, DEFAULT_COWL_SWAP_NAME,
-        DEFAULT_COWL_VESTING_NAME, EVENTS_ADDRESS, INSTALLER, TTL, WASM_PATH,
+        DEFAULT_CEP_18_TOKEN_DECIMALS, DEFAULT_CEP_18_TOKEN_NAME, DEFAULT_SWAP_NAME,
+        DEFAULT_VESTING_NAME, EVENTS_ADDRESS, INSTALLER, TTL, WASM_PATH,
     },
     format_with_thousands_separator, get_contract_cep18_hash_keys, get_contract_swap_hash_keys,
     get_contract_vesting_hash_keys,
@@ -52,7 +52,7 @@ static ARGS_CEP18_JSON: Lazy<Mutex<Value>> = Lazy::new(|| {
         {
             "name": ARG_DECIMALS,
             "type": "U8",
-            "value": COWL_CEP_18_TOKEN_DECIMALS.parse::<u8>().unwrap_or(DEFAULT_COWL_CEP_18_TOKEN_DECIMALS)
+            "value": COWL_CEP_18_TOKEN_DECIMALS.parse::<u8>().unwrap_or(DEFAULT_CEP_18_TOKEN_DECIMALS)
         },
         {
             "name": ARG_TOTAL_SUPPLY,
@@ -163,7 +163,7 @@ pub async fn deploy_cep18_token() -> Result<(), Error> {
     );
 
     let session_params = SessionStrParams::default();
-    let path = &format!("{}{}.wasm", WASM_PATH, DEFAULT_COWL_CEP_18_TOKEN_NAME);
+    let path = &format!("{}{}.wasm", WASM_PATH, DEFAULT_CEP_18_TOKEN_NAME);
     let module_bytes = match read_wasm_file(path) {
         Ok(module_bytes) => module_bytes,
         Err(err) => {
@@ -316,7 +316,7 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
     );
 
     let session_params = SessionStrParams::default();
-    let path = &format!("{}{}.wasm", WASM_PATH, DEFAULT_COWL_VESTING_NAME);
+    let path = &format!("{}{}.wasm", WASM_PATH, DEFAULT_VESTING_NAME);
     let module_bytes = match read_wasm_file(path) {
         Ok(module_bytes) => module_bytes,
         Err(err) => {
@@ -496,7 +496,7 @@ pub async fn deploy_swap_contract() -> Result<(), Error> {
     );
 
     let session_params = SessionStrParams::default();
-    let path = &format!("{}{}.wasm", WASM_PATH, DEFAULT_COWL_SWAP_NAME);
+    let path = &format!("{}{}.wasm", WASM_PATH, DEFAULT_SWAP_NAME);
     let module_bytes = match read_wasm_file(path) {
         Ok(module_bytes) => module_bytes,
         Err(err) => {
