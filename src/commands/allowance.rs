@@ -86,7 +86,7 @@ pub async fn set_allowance(
     let secret_key = retrieve_private_key(owner).await;
 
     let answer = prompt_yes_no(&format!(
-        "Please confirm {} allowance of {} () {} for {}?",
+        "Please confirm {} allowance of {} ({}) for {}?",
         if decrease { "decreasing" } else { "increasing" },
         format_with_thousands_separator(&motes_to_cspr(&amount).unwrap()),
         *COWL_CEP_18_TOKEN_SYMBOL,

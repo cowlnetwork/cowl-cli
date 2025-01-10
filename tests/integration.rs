@@ -594,6 +594,7 @@ mod tests_install_vesting {
 
 mod tests_swap {
     use assert_cmd::Command;
+    use chrono::Utc;
     use cowl_cli::utils::constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL};
     use once_cell::sync::Lazy;
     use std::sync::Arc;
@@ -740,5 +741,34 @@ mod tests_swap {
             .stdout(predicates::str::contains(
                 COWL_CEP_18_COOL_SYMBOL.to_string(),
             ));
+    }
+
+    #[tokio::test]
+    async fn test_update_times_command() {
+        setup().await;
+        let mut cmd = Command::cargo_bin(BINARY).unwrap();
+        let start_time = (Utc::now().timestamp() as u64).to_string();
+        let duration = 3600u64.to_string();
+
+        let confirmation_response = "y\n";
+
+        cmd.arg("update-times")
+            .arg("--start-time")
+            .arg(&start_time)
+            .arg("--duration")
+            .arg(&duration)
+            .write_stdin(confirmation_response.to_string())
+            .assert()
+            .success()
+            .stdout(predicates::str::contains(
+                "Command executed: Update times start: ".to_string(),
+            ))
+            .stdout(predicates::str::contains("Wait deploy_hash"))
+            .stdout(predicates::str::contains("Wait deploy_hash"))
+            .stdout(predicates::str::contains("Processed deploy hash"))
+            .stdout(predicates::str::contains("START:"))
+            .stdout(predicates::str::contains("END:"))
+            .stdout(predicates::str::contains("_u64"))
+            .stdout(predicates::str::contains("UTC"));
     }
 }

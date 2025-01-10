@@ -17,8 +17,9 @@ use config::get_key_pair_from_vesting;
 use constants::{
     CHAIN_NAME, COWL_CEP18_TOKEN_CONTRACT_HASH_NAME, COWL_CEP18_TOKEN_CONTRACT_PACKAGE_HASH_NAME,
     COWL_SET_MODALITIES_CALL_PAYMENT_AMOUNT, COWL_SWAP_NAME,
-    COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT, COWL_VESTING_CALL_PAYMENT_AMOUNT, COWL_VESTING_NAME,
-    COWL_WITHDRAW_CSPR_CALL_PAYMENT_AMOUNT, EVENTS_ADDRESS, INSTALLER, RPC_ADDRESS, TTL,
+    COWL_TOKEN_TRANSFER_CALL_PAYMENT_AMOUNT, COWL_UPDATE_TIMES_CALL_PAYMENT_AMOUNT,
+    COWL_VESTING_CALL_PAYMENT_AMOUNT, COWL_VESTING_NAME, COWL_WITHDRAW_CSPR_CALL_PAYMENT_AMOUNT,
+    EVENTS_ADDRESS, INSTALLER, RPC_ADDRESS, TTL,
 };
 use cowl_vesting::constants::{
     ARG_AMOUNT, ARG_EVENTS_MODE, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER, ARG_VESTING_TYPE,
@@ -28,7 +29,8 @@ use cowl_vesting::constants::{
 };
 
 use cowl_swap::constants::{
-    ENTRY_POINT_BALANCE_COWL, ENTRY_POINT_WITHDRAW_COWL, ENTRY_POINT_WITHDRAW_CSPR,
+    ARG_DURATION, ARG_START_TIME, ENTRY_POINT_BALANCE_COWL, ENTRY_POINT_UPDATE_TIMES,
+    ENTRY_POINT_WITHDRAW_COWL, ENTRY_POINT_WITHDRAW_CSPR,
     PREFIX_CONTRACT_NAME as PREFIX_CONTRACT_SWAP_NAME,
     PREFIX_CONTRACT_PACKAGE_NAME as PREFIX_CONTRACT_PACKAGE_SWAP_NAME,
 };
@@ -607,6 +609,37 @@ pub async fn call_withdraw_cspr_entry_point(
         ENTRY_POINT_WITHDRAW_CSPR,
         &args,
         &COWL_WITHDRAW_CSPR_CALL_PAYMENT_AMOUNT,
+        &key_pair.public_key,
+        format_base64_to_pem(&key_pair.private_key_base64.clone().unwrap()),
+    )
+    .await;
+}
+
+pub async fn call_update_times(
+    key_pair: &KeyPair,
+    contract_swap_package: &str,
+    start_time: u64,
+    duration: u64,
+) {
+    let args = json!([
+        {
+            "name": ARG_START_TIME,
+            "type": "U64",
+            "value": start_time
+        },
+        {
+            "name": ARG_DURATION,
+            "type": "U64",
+            "value": duration
+        }
+    ])
+    .to_string();
+
+    execute_contract_entry_point(
+        contract_swap_package,
+        ENTRY_POINT_UPDATE_TIMES,
+        &args,
+        &COWL_UPDATE_TIMES_CALL_PAYMENT_AMOUNT,
         &key_pair.public_key,
         format_base64_to_pem(&key_pair.private_key_base64.clone().unwrap()),
     )

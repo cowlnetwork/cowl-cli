@@ -1,6 +1,7 @@
 pub mod addresses;
 pub mod allowance;
 pub mod balance;
+pub mod cspr_to_cowl;
 pub mod deploy;
 pub mod deposit_cowl;
 pub mod deposit_cspr;
@@ -10,6 +11,7 @@ pub mod status;
 pub mod swap_balance;
 pub mod transfer;
 pub mod transfer_from;
+pub mod update_times;
 pub mod upgrade_events;
 pub mod withdraw_cowl;
 pub mod withdraw_cspr;

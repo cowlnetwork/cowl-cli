@@ -318,6 +318,32 @@ pub enum Commands {
         about = "Retrieve the balance of the swap contract"
     )]
     SwapBalance,
+    #[command(name = "swap-cspr-to-cowl", about = "Swap CSPR to COWL")]
+    CsprToCowl {
+        /// Specify the source (public key signing).
+        #[arg(
+            long,
+            help = "The source (public key signing) to deposit from.
+                            Example: 016fd7fb5f002d82f3813c76ac83940d4d886035395ddd9be66c9a4a2993b63aaf"
+        )]
+        from: String,
+        /// The amount to swap.
+        #[arg(
+            long,
+            help = "The amount to swap in the smallest unit (e.g., '100000000000' represents 100 CSPR). Example: '100000000000'"
+        )]
+        amount: String,
+    },
+    #[command(
+        name = "update-times",
+        about = "Update times of Swap contract to activate swapping"
+    )]
+    UpdateTimes {
+        #[arg(long, help = "The start time of the Swap (date in seconds)")]
+        start_time: String,
+        #[arg(long, help = "The duration of the Swap (duration in seconds)")]
+        duration: String,
+    },
 }
 
 pub async fn run() {
@@ -518,6 +544,17 @@ pub async fn run() {
             commands::withdraw_cspr::print_withdraw_cspr(amount).await
         }
         Commands::SwapBalance => commands::swap_balance::print_swap_balance().await,
+        Commands::CsprToCowl { from, amount } => {
+            commands::cspr_to_cowl::print_cspr_to_cowl(
+                PublicKey::new(&from).expect("Failed to convert public key to key"),
+                amount,
+            )
+            .await
+        }
+        Commands::UpdateTimes {
+            start_time,
+            duration,
+        } => commands::update_times::print_update_times(start_time, duration).await,
     }
 }
 
@@ -682,6 +719,22 @@ impl Display for Commands {
                 amount,
             ),
             Commands::SwapBalance => write!(f, "Get Swap contract balance"),
+            Commands::CsprToCowl { from, amount } => write!(
+                f,
+                "Swap {} CSPR ({} motes) to {}\nfrom {}",
+                format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
+                amount,
+                *COWL_CEP_18_TOKEN_SYMBOL,
+                from.clone(),
+            ),
+            Commands::UpdateTimes {
+                start_time,
+                duration,
+            } => write!(
+                f,
+                "Update times start: {} for duration {}",
+                start_time, duration,
+            ),
         }
     }
 }
