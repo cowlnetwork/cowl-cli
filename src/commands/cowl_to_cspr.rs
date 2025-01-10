@@ -73,10 +73,7 @@ pub async fn cowl_to_cspr(from: PublicKey, amount: String) {
     );
 
     let session_params = SessionStrParams::default();
-    let path = &format!(
-        "{}{}.wasm",
-        WASM_PATH, DEFAULT_SWAP_COWL_TO_CSPR_SESSION
-    );
+    let path = &format!("{}{}.wasm", WASM_PATH, DEFAULT_SWAP_COWL_TO_CSPR_SESSION);
     let module_bytes = match read_wasm_file(path) {
         Ok(module_bytes) => module_bytes,
         Err(err) => {

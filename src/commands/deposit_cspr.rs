@@ -3,8 +3,8 @@ use crate::{
     utils::{
         config::get_key_pair_from_vesting,
         constants::{
-            CHAIN_NAME, COWL_DEPOSIT_CSPR_CALL_PAYMENT_AMOUNT,
-            DEFAULT_SWAP_DEPOSIT_CSPR_SESSION, EVENTS_ADDRESS, INSTALLER, TTL, WASM_PATH,
+            CHAIN_NAME, COWL_DEPOSIT_CSPR_CALL_PAYMENT_AMOUNT, DEFAULT_SWAP_DEPOSIT_CSPR_SESSION,
+            EVENTS_ADDRESS, INSTALLER, TTL, WASM_PATH,
         },
         format_with_thousands_separator, get_contract_swap_hash_keys,
         keys::format_base64_to_pem,
@@ -62,10 +62,7 @@ pub async fn deposit_cspr(amount: String) {
     );
 
     let session_params = SessionStrParams::default();
-    let path = &format!(
-        "{}{}.wasm",
-        WASM_PATH, DEFAULT_SWAP_DEPOSIT_CSPR_SESSION
-    );
+    let path = &format!("{}{}.wasm", WASM_PATH, DEFAULT_SWAP_DEPOSIT_CSPR_SESSION);
     let module_bytes = match read_wasm_file(path) {
         Ok(module_bytes) => module_bytes,
         Err(err) => {
