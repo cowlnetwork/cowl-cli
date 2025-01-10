@@ -4,8 +4,9 @@ use crate::utils::{
         CHAIN_NAME, COWL_CEP_18_INSTALL_PAYMENT_AMOUNT, COWL_CEP_18_TOKEN_DECIMALS,
         COWL_CEP_18_TOKEN_NAME, COWL_CEP_18_TOKEN_SYMBOL, COWL_SWAP_INSTALL_PAYMENT_AMOUNT,
         COWL_SWAP_NAME, COWL_VESTING_INSTALL_PAYMENT_AMOUNT, COWL_VESTING_NAME,
-        DEFAULT_CEP_18_TOKEN_DECIMALS, DEFAULT_CEP_18_TOKEN_NAME, DEFAULT_SWAP_NAME,
-        DEFAULT_VESTING_NAME, EVENTS_ADDRESS, INSTALLER, TTL, WASM_PATH,
+        COWL_VESTING_UPDATE_PAYMENT_AMOUNT, DEFAULT_CEP_18_TOKEN_DECIMALS,
+        DEFAULT_CEP_18_TOKEN_NAME, DEFAULT_SWAP_NAME, DEFAULT_VESTING_NAME, EVENTS_ADDRESS,
+        INSTALLER, TTL, WASM_PATH,
     },
     format_with_thousands_separator, get_contract_cep18_hash_keys, get_contract_swap_hash_keys,
     get_contract_vesting_hash_keys,
@@ -359,7 +360,11 @@ pub async fn deploy_vesting_contract() -> Result<(), Error> {
         .install(
             deploy_params,
             session_params,
-            &COWL_VESTING_INSTALL_PAYMENT_AMOUNT,
+            if contract_vesting_hash.is_empty() {
+                &COWL_VESTING_INSTALL_PAYMENT_AMOUNT
+            } else {
+                &COWL_VESTING_UPDATE_PAYMENT_AMOUNT
+            },
             None,
         )
         .await;
