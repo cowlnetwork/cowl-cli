@@ -1,6 +1,7 @@
 pub mod addresses;
 pub mod allowance;
 pub mod balance;
+pub mod cowl_to_cspr;
 pub mod cspr_to_cowl;
 pub mod deploy;
 pub mod deposit_cowl;

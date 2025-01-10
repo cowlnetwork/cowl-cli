@@ -334,6 +334,22 @@ pub enum Commands {
         )]
         amount: String,
     },
+    #[command(name = "cowl-to-cspr", about = "Swap COWL to CSPR")]
+    CowlToCspr {
+        /// Specify the source (public key signing).
+        #[arg(
+            long,
+            help = "The source (public key signing) to deposit from.
+                            Example: 016fd7fb5f002d82f3813c76ac83940d4d886035395ddd9be66c9a4a2993b63aaf"
+        )]
+        from: String,
+        /// The amount to swap.
+        #[arg(
+            long,
+            help = "The amount to swap in the smallest unit (e.g., '100000000000' represents 100 COWL). Example: '100000000000'"
+        )]
+        amount: String,
+    },
     #[command(
         name = "update-times",
         about = "Update times of Swap contract to activate swapping"
@@ -551,6 +567,13 @@ pub async fn run() {
             )
             .await
         }
+        Commands::CowlToCspr { from, amount } => {
+            commands::cowl_to_cspr::print_cowl_to_cspr(
+                PublicKey::new(&from).expect("Failed to convert public key to key"),
+                amount,
+            )
+            .await
+        }
         Commands::UpdateTimes {
             start_time,
             duration,
@@ -725,6 +748,15 @@ impl Display for Commands {
                 format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
                 amount,
                 *COWL_CEP_18_TOKEN_SYMBOL,
+                from.clone(),
+            ),
+            Commands::CowlToCspr { from, amount } => write!(
+                f,
+                "Swap {} {} ({} {}) to CSPR\nfrom {}",
+                format_with_thousands_separator(&motes_to_cspr(amount).unwrap()),
+                *COWL_CEP_18_TOKEN_SYMBOL,
+                amount,
+                *COWL_CEP_18_COOL_SYMBOL,
                 from.clone(),
             ),
             Commands::UpdateTimes {
