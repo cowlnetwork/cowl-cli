@@ -107,7 +107,7 @@ pub enum Commands {
     /// Transfer tokens between accounts or vesting types.
     #[command(
         name = "transfer",
-        about = "Transfers tokens between a source and a destination account or vesting type"
+        about = "Transfer tokens between a source and a destination account or vesting type"
     )]
     Transfer {
         /// Specify the source (public key signing).
@@ -139,7 +139,7 @@ pub enum Commands {
     /// Allowance command that checks or manages allowances between accounts.
     #[command(
         name = "allowance",
-        about = "Checks or manages the allowance between the owner and spender"
+        about = "Check the allowance between the owner and spender"
     )]
     Allowance {
         #[arg(
@@ -159,7 +159,7 @@ pub enum Commands {
     /// Transfer tokens from an account using a previously granted allowance.
     #[command(
         name = "transfer-from",
-        about = "Transfers tokens from an account using a previously granted allowance"
+        about = "Transfer tokens from an account using a previously granted allowance"
     )]
     TransferFrom {
         /// Specify the allowed operator (public key signing).
@@ -194,7 +194,7 @@ pub enum Commands {
     /// Increase the allowance of a spender for an owner.
     #[command(
         name = "increase-allowance",
-        about = "Increases the allowance of a spender for a given owner"
+        about = "Increase the allowance of a spender for a given owner"
     )]
     IncreaseAllowance {
         #[arg(long, help = "The owner (public key signing) of the tokens")]
@@ -217,7 +217,7 @@ pub enum Commands {
     /// Decrease the allowance of a spender for an owner.
     #[command(
         name = "decrease-allowance",
-        about = "Decreases the allowance of a spender for a given owner"
+        about = "Decrease the allowance of a spender for a given owner"
     )]
     DecreaseAllowance {
         #[arg(long, help = "The owner (public key signing) of the tokens")]
@@ -304,7 +304,7 @@ pub enum Commands {
         )]
         amount: String,
     },
-    #[command(name = "withdraw-cspr", about = "Withdraw COWL")]
+    #[command(name = "withdraw-cspr", about = "Withdraw CSPR")]
     WithdrawCspr {
         /// The amount to withdraw.
         #[arg(
