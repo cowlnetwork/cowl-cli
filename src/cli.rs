@@ -264,7 +264,7 @@ pub enum Commands {
     /// Upgrade contratc and enable events
     #[command(
         name = "upgrade-events",
-        about = "Upgrade and enable evensts (specific upgrade 01/2025)"
+        about = "Upgrade and enable events (specific upgrade 01/2025)"
     )]
     UpgradeEvents,
 
