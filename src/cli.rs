@@ -426,6 +426,7 @@ pub async fn run() {
                         .expect("Failed to convert vesting type")
                 }),
                 key.map(|formatted_str| parse_key_from_formatted_str(&formatted_str)),
+                None,
             )
             .await
         }

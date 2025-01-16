@@ -187,6 +187,29 @@ mod tests_install_vesting {
     }
 
     #[tokio::test]
+    async fn test_balance_with_random_key() {
+        setup().await;
+        let mut cmd = Command::cargo_bin(BINARY).unwrap();
+        let key = "0203bdafe642793cdc7d81ea5f2aeb30621ec8e3efdd7366bb91fd9297497a98d122"; // Random key
+
+        // Execute the command with arguments
+        cmd.arg("balance")
+            .arg("--key")
+            .arg(key)
+            .assert()
+            .success()
+            .stdout(predicates::str::contains(format!(
+                "Command executed: Balance for {}",
+                key
+            )))
+            .stdout(predicates::str::contains(
+                COWL_CEP_18_TOKEN_SYMBOL.to_string(),
+            ))
+            .stdout(predicates::str::contains("\"0\""))
+            .stdout(predicates::str::contains("\"0.00\""));
+    }
+
+    #[tokio::test]
     async fn test_transfer_command() {
         setup().await;
         let mut cmd = Command::cargo_bin(BINARY).unwrap();
@@ -597,6 +620,7 @@ mod tests_swap {
     use chrono::Utc;
     use cowl_cli::utils::constants::{COWL_CEP_18_COOL_SYMBOL, COWL_CEP_18_TOKEN_SYMBOL};
     use once_cell::sync::Lazy;
+    use predicates::prelude::PredicateBooleanExt;
     use std::sync::Arc;
     use tokio::sync::Mutex;
 
@@ -626,7 +650,7 @@ mod tests_swap {
         setup().await;
         let mut cmd = Command::cargo_bin(BINARY).unwrap();
         let from = "01fbe77037c317c12af3a6af08d02d9fc6b3a1636237ae48f77b198a9483d94801"; // Liquidity
-        let amount = "100000000000";
+        let amount = "1000000000000";
 
         let base64_key = "MC4CAQAwBQYDK2VwBCIEIOeKQNbCmsyZme2t5U7Lulnn2TfdZkiFANeg89Sy7Pzn";
         let confirmation_response = "y\n";
@@ -640,7 +664,7 @@ mod tests_swap {
             .assert()
             .success()
             .stdout(predicates::str::contains(format!(
-                "Command executed: Deposit 100.00 {}",
+                "Command executed: Deposit 1,000.00 {}",
                 COWL_CEP_18_TOKEN_SYMBOL.clone()
             )))
             .stdout(predicates::str::contains(from))
@@ -733,14 +757,16 @@ mod tests_swap {
             .assert()
             .success()
             .stdout(predicates::str::contains(
-                "Command executed: Get Swap contract balance".to_string(),
+                "Command executed: Get Swap contract balance",
             ))
             .stdout(predicates::str::contains(
                 COWL_CEP_18_TOKEN_SYMBOL.to_string(),
             ))
             .stdout(predicates::str::contains(
                 COWL_CEP_18_COOL_SYMBOL.to_string(),
-            ));
+            ))
+            .stdout(predicates::str::contains("\"0\"").not()) // Ensure it doesn't contain "0"
+            .stdout(predicates::str::contains("\"0.00\"").not()); // Ensure it doesn't contain "0.00"
     }
 
     #[tokio::test]
@@ -847,7 +873,7 @@ mod tests_swap {
             .success();
 
         let mut cmd = Command::cargo_bin(BINARY).unwrap();
-        let amount = "10000000000"; // 10 COWL
+        let amount = "10000000000"; // 10 COWL ~> 27 COWL
 
         let start_time = (Utc::now().timestamp() as u64).to_string();
         let duration = 3600u64.to_string();

@@ -159,14 +159,14 @@ pub async fn cspr_to_cowl(from: PublicKey, amount: String) {
 
     let key = Some(Key::from_account(from.to_account_hash()));
     log::info!("Balance for {}", from.to_string());
-    print_balance(None, key.clone()).await;
+    print_balance(None, key.clone(), None).await;
 
     let key = Key::from_formatted_str(&cowl_swap_contract_package_hash).ok();
     log::info!(
         "Balance for Swap Contract Package {}",
         cowl_swap_contract_package_hash
     );
-    print_balance(None, key).await;
+    print_balance(None, None, key).await;
 }
 
 pub async fn print_cspr_to_cowl(from: PublicKey, amount: String) {

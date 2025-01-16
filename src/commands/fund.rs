@@ -158,11 +158,11 @@ pub async fn print_fund_addresses(
         process::exit(1)
     }
 
-    print_balance(vesting_type, key.clone()).await;
+    print_balance(vesting_type, key.clone(), None).await;
 
     fund_addresses(vesting_type, key.clone(), amount).await;
 
-    print_balance(vesting_type, key.clone()).await;
+    print_balance(vesting_type, key.clone(), None).await;
 }
 
 fn check_amount(amount_str: &str) -> bool {

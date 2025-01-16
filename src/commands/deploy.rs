@@ -457,15 +457,16 @@ pub async fn deploy_swap_contract() -> Result<(), Error> {
         process::exit(1)
     }
 
-    let (contract_swap_hash, _) = match get_contract_swap_hash_keys().await {
+    let (contract_swap_hash, contract_swap_package_hash) = match get_contract_swap_hash_keys().await
+    {
         Some((hash, package_hash)) => (hash, package_hash),
         None => (String::from(""), String::from("")),
     };
 
     if !contract_swap_hash.is_empty() {
         let answer = prompt_yes_no(&format!(
-            "Swap contract already exists at {}, do you want to upgrade?",
-            contract_swap_hash
+            "Swap contract already exists at\ncontract {}\npackage {}\ndo you want to upgrade?",
+            contract_swap_hash, contract_swap_package_hash
         ));
 
         if answer {

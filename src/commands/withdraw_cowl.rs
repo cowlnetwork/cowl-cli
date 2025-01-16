@@ -40,14 +40,14 @@ pub async fn withdraw_cowl(amount: String) {
 
     let key = Key::from_account(key_pair.public_key.to_account_hash());
     log::info!("Balance for {}", key_pair.public_key.to_string());
-    print_balance(None, Some(key.clone())).await;
+    print_balance(None, Some(key.clone()), None).await;
 
     let key = Key::from_formatted_str(&cowl_swap_contract_package_hash).ok();
     log::info!(
         "Balance for Swap Contract Package {}",
         cowl_swap_contract_package_hash
     );
-    print_balance(None, key).await;
+    print_balance(None, None, key).await;
 }
 
 pub async fn print_withdraw_cowl(amount: String) {

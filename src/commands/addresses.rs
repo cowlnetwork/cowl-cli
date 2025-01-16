@@ -32,7 +32,9 @@ pub async fn list_funded_addresses() -> Option<IndexMap<String, IndexMap<String,
                     .to_formatted_string(),
             );
 
-            let (balance, balance_motes) = get_cspr_account_balance(key_pair, vesting_type).await;
+            let (balance, balance_motes) =
+                get_cspr_account_balance(Some(key_pair), Some(vesting_type.to_string()), None)
+                    .await;
 
             key_map.insert("balance_motes".to_string(), balance_motes);
 

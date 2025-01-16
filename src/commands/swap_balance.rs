@@ -16,7 +16,7 @@ pub async fn swap_balance() {
         "Balance for Swap Contract Package {}",
         cowl_swap_contract_package_hash
     );
-    print_balance(None, key).await;
+    print_balance(None, None, key).await;
 }
 
 pub async fn print_swap_balance() {
