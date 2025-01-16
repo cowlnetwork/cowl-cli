@@ -18,14 +18,14 @@ pub async fn get_balance(
     maybe_vesting_type: Option<VestingType>,
     maybe_key: Option<Key>,
 ) -> String {
-    let dictionary_key =
-        match determine_dictionary_key(maybe_vesting_type.clone(), maybe_key.clone()).await {
-            Ok(key) => key,
-            Err(err) => {
-                log::error!("{err}");
-                return DEFAULT_BALANCE.to_string();
-            }
-        };
+    let dictionary_key = match determine_dictionary_key(maybe_vesting_type, maybe_key.clone()).await
+    {
+        Ok(key) => key,
+        Err(err) => {
+            log::error!("{err}");
+            return DEFAULT_BALANCE.to_string();
+        }
+    };
 
     let cowl_cep18_token_contract_hash = match fetch_contract_hash().await {
         Some(hash) => hash,
